@@ -1,0 +1,31 @@
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Environments
+env/
+venv/
+.venv/
+ENV/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Streamlit & Cache
+.streamlit/
+.cache/
+hf_cache/
+
+# PyTorch / CUDA
+*.pt
+*.pth
+*.bin
+
+# OS files
+.DS_Store
+Thumbs.db
