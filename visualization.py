@@ -62,7 +62,7 @@ def plot_embedding_pca_2d(tokens: List[str], embeddings: np.ndarray) -> go.Figur
             color=token_norms,
             colorscale="Viridis",
             showscale=True,
-            colorbar=dict(title="L2 Norm", titleside="right"),
+            colorbar=dict(title="L2 Norm"),
             line=dict(width=2, color="#ffffff")
         ),
         hovertemplate="<b>Token:</b> %{text}<br><b>Token Index:</b> %{customdata[0]}<br><b>L2 Norm:</b> %{customdata[1]:.3f}<br><b>PC1:</b> %{x:.3f}<br><b>PC2:</b> %{y:.3f}<extra></extra>",
