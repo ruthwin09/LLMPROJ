@@ -185,10 +185,18 @@ async def stream_chat(
         .first()
     )
     if not conv:
-        raise HTTPException(status_code=404, detail="Conversation not found")
-
-    # Update conversation title if first message
-    if not conv.messages:
+        # Self-healing: auto-create conversation if missing/expired ID was provided
+        clean_title = data.message.strip().replace("\n", " ")
+        conv = Conversation(
+            id=data.conversation_id,
+            user_id=current_user.id,
+            title=clean_title[:32] + "..." if len(clean_title) > 32 else (clean_title or "New Chat"),
+            model=data.model or current_user.preferred_model or "llama-3.3-70b-versatile"
+        )
+        db.add(conv)
+        db.commit()
+        db.refresh(conv)
+    elif not conv.messages:
         clean_title = data.message.strip().replace("\n", " ")
         conv.title = clean_title[:32] + "..." if len(clean_title) > 32 else clean_title
 
