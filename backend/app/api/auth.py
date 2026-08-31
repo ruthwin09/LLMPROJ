@@ -51,41 +51,42 @@ class PasswordResetSchema(BaseModel):
     new_password: str
 
 
-def get_guest_user(db: Session) -> User:
-    """Retrieves or creates a default guest user for unauthenticated requests."""
-    guest = db.query(User).filter(User.email == "guest@chatgpt.platform").first()
-    if not guest:
-        guest = User(
-            email="guest@chatgpt.platform",
-            full_name="Guest User",
-            auth_provider="guest"
-        )
-        db.add(guest)
-        db.commit()
-        db.refresh(guest)
+import uuid
+
+def create_unique_guest_user(db: Session) -> User:
+    """Creates a unique isolated guest user."""
+    guest_suffix = str(uuid.uuid4())[:8]
+    guest = User(
+        email=f"guest_{guest_suffix}@chatgpt.platform",
+        full_name="Guest User",
+        auth_provider="guest"
+    )
+    db.add(guest)
+    db.commit()
+    db.refresh(guest)
     return guest
 
 
 def get_current_user(token: Optional[str] = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
-    """Dependency for resolving authenticated user with seamless guest fallback."""
+    """Dependency for resolving authenticated user with seamless private guest fallback."""
     if not token:
-        return get_guest_user(db)
+        return create_unique_guest_user(db)
     
     user_id = decode_access_token(token)
     if not user_id:
-        return get_guest_user(db)
+        return create_unique_guest_user(db)
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        return get_guest_user(db)
+        return create_unique_guest_user(db)
         
     return user
 
 
 @router.post("/guest", response_model=TokenSchema)
 def guest_auth(db: Session = Depends(get_db)):
-    """Creates/retrieves an instant guest authentication token."""
-    guest = get_guest_user(db)
+    """Creates a fresh, isolated guest authentication token."""
+    guest = create_unique_guest_user(db)
     token = create_access_token(subject=guest.id)
     return {"access_token": token, "token_type": "bearer", "user": guest}
 
