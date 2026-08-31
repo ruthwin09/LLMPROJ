@@ -1,10 +1,14 @@
-"""Authentication API Endpoints (Register, Login, Google OAuth, Me, Password Reset)."""
+"""Authentication API Endpoints (Register, Login, Google OAuth, Me, Password Reset, Guest Auth)."""
 
+import uuid
+import json
+import base64
+import datetime
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
-from typing import Optional
 
 from app.core.database import get_db
 from app.core.security import get_password_hash, verify_password, create_access_token, decode_access_token
@@ -40,8 +44,8 @@ class TokenSchema(BaseModel):
 
 
 class GoogleOAuthSchema(BaseModel):
-    credential: str
-    email: EmailStr
+    credential: Optional[str] = None
+    email: Optional[EmailStr] = None
     name: Optional[str] = None
     picture: Optional[str] = None
 
@@ -51,7 +55,22 @@ class PasswordResetSchema(BaseModel):
     new_password: str
 
 
-import uuid
+def decode_google_credential(credential: str) -> dict:
+    """Safely decodes Google OAuth ID token payload."""
+    try:
+        parts = credential.split(".")
+        if len(parts) >= 2:
+            payload_b64 = parts[1]
+            # Add padding if needed
+            rem = len(payload_b64) % 4
+            if rem > 0:
+                payload_b64 += "=" * (4 - rem)
+            decoded_bytes = base64.urlsafe_b64decode(payload_b64)
+            return json.loads(decoded_bytes.decode("utf-8"))
+    except Exception:
+        pass
+    return {}
+
 
 def create_unique_guest_user(db: Session) -> User:
     """Creates a unique isolated guest user."""
@@ -129,18 +148,57 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
 
 @router.post("/google", response_model=TokenSchema)
 def google_oauth(data: GoogleOAuthSchema, db: Session = Depends(get_db)):
-    """Handles Google OAuth authentication and account creation."""
-    user = db.query(User).filter(User.email == data.email).first()
+    """Handles Google OAuth authentication, token decoding, and account sync."""
+    email = data.email
+    name = data.name
+    picture = data.picture
+    google_id = None
+
+    # If Google JWT ID token credential is provided, decode payload
+    if data.credential:
+        payload = decode_google_credential(data.credential)
+        if payload:
+            email = payload.get("email") or email
+            name = payload.get("name") or payload.get("given_name") or name
+            picture = payload.get("picture") or picture
+            google_id = payload.get("sub")
+
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Valid email address is required for Google authentication."
+        )
+
+    user = db.query(User).filter(User.email == email).first()
     if not user:
         user = User(
-            email=data.email,
-            full_name=data.name,
-            avatar_url=data.picture,
-            auth_provider="google"
+            email=email,
+            full_name=name or email.split("@")[0].capitalize(),
+            avatar_url=picture,
+            auth_provider="google",
+            google_id=google_id
         )
         db.add(user)
         db.commit()
         db.refresh(user)
+    else:
+        # Update user profile with latest Google metadata if available
+        updated = False
+        if picture and (not user.avatar_url or user.avatar_url != picture):
+            user.avatar_url = picture
+            updated = True
+        if name and (not user.full_name or user.full_name == "Guest User"):
+            user.full_name = name
+            updated = True
+        if google_id and not user.google_id:
+            user.google_id = google_id
+            updated = True
+        if user.auth_provider != "google" and user.auth_provider == "guest":
+            user.auth_provider = "google"
+            updated = True
+        if updated:
+            db.commit()
+            db.refresh(user)
 
     token = create_access_token(subject=user.id)
     return {"access_token": token, "token_type": "bearer", "user": user}

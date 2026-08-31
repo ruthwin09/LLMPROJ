@@ -41,7 +41,7 @@ from visualization import (
 )
 
 # ---------------------------------------------------------------------------
-# Page Configuration & ChatGPT Modern Styling
+# Page Configuration & ChatGPT Material Dark Styling
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="ChatGPT",
@@ -53,11 +53,12 @@ st.set_page_config(
 # Custom High-End ChatGPT CSS Styling
 st.markdown("""
 <style>
-    /* Google Fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
     
     html, body, [class*="css"] {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background-color: #121214;
+        color: #f3f3f6;
     }
 
     /* Main Container Padding */
@@ -67,39 +68,10 @@ st.markdown("""
         max-width: 1050px;
     }
 
-    /* ChatGPT Dark Sidebar Theme */
+    /* Material Dark Sidebar */
     [data-testid="stSidebar"] {
-        background-color: #171717;
+        background-color: #18181e;
         border-right: 1px solid rgba(255, 255, 255, 0.08);
-    }
-    
-    [data-testid="stSidebar"] .block-container {
-        padding-top: 1.2rem;
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-
-    /* New Chat Button */
-    .new-chat-btn {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        width: 100%;
-        padding: 10px 14px;
-        background: #212121;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        border-radius: 8px;
-        color: #f3f4f6;
-        font-size: 0.92rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        margin-bottom: 12px;
-        text-decoration: none;
-    }
-    .new-chat-btn:hover {
-        background: #2f2f2f;
-        border-color: rgba(255, 255, 255, 0.3);
     }
 
     /* Top Navigation Header */
@@ -108,10 +80,9 @@ st.markdown("""
         justify-content: space-between;
         align-items: center;
         padding: 12px 18px;
-        background: rgba(33, 33, 33, 0.75);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 12px;
+        background: #1e1e24;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 16px;
         margin-bottom: 20px;
     }
     .nav-brand {
@@ -120,22 +91,22 @@ st.markdown("""
         gap: 10px;
         font-size: 1.15rem;
         font-weight: 700;
-        color: #f8fafc;
+        color: #f3f3f6;
     }
     .nav-badge {
-        background: rgba(16, 185, 129, 0.15);
-        border: 1px solid rgba(16, 185, 129, 0.4);
-        color: #34d399;
-        font-size: 0.75rem;
+        background: rgba(187, 134, 252, 0.15);
+        border: 1px solid rgba(187, 134, 252, 0.4);
+        color: #d0bcff;
+        font-size: 0.72rem;
         padding: 2px 8px;
         border-radius: 12px;
         font-weight: 600;
     }
     .nav-device-badge {
-        background: rgba(99, 102, 241, 0.15);
-        border: 1px solid rgba(99, 102, 241, 0.4);
-        color: #818cf8;
-        font-size: 0.75rem;
+        background: rgba(124, 77, 255, 0.2);
+        border: 1px solid rgba(124, 77, 255, 0.4);
+        color: #bb86fc;
+        font-size: 0.72rem;
         padding: 2px 8px;
         border-radius: 12px;
         font-weight: 600;
@@ -298,8 +269,10 @@ if st.session_state.current_session_id not in st.session_state.sessions:
     }
     st.session_state.current_session_id = new_id
 
-active_session = st.session_state.sessions[st.session_state.current_session_id]
+if "google_user" not in st.session_state:
+    st.session_state.google_user = None
 
+active_session = st.session_state.sessions[st.session_state.current_session_id]
 
 # ---------------------------------------------------------------------------
 # Sidebar: ChatGPT Navigation, Conversations & Model Controls
@@ -307,14 +280,43 @@ active_session = st.session_state.sessions[st.session_state.current_session_id]
 with st.sidebar:
     # App Branding
     st.markdown("""
-    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
         <span style="font-size: 1.7rem;">🤖</span>
         <div>
             <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; line-height: 1.1;">ChatGPT</div>
-            <div style="font-size: 0.75rem; color: #94a3b8;">with Deep Neural X-Ray</div>
+            <div style="font-size: 0.75rem; color: #10b981; font-weight: 600;">AI Platform with Google SSO</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+    # Google Authentication Card
+    if st.session_state.google_user:
+        u = st.session_state.google_user
+        st.markdown(f"""
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <div style="font-size: 0.8rem; font-weight: 700; color: #f8fafc;">🟢 {u.get('name', 'Google User')}</div>
+                <div style="font-size: 0.7rem; color: #94a3b8;">{u.get('email', '')}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        if st.button("Sign Out of Google", key="sign_out_google_btn", use_container_width=True):
+            st.session_state.google_user = None
+            st.rerun()
+    else:
+        with st.expander("🔑 Sign In with Google Account", expanded=False):
+            g_email = st.text_input("Google Email", placeholder="user@gmail.com", key="st_google_email")
+            g_name = st.text_input("Name (Optional)", placeholder="Google User", key="st_google_name")
+            if st.button("Sign In with Google", key="st_google_signin_btn", use_container_width=True):
+                if g_email and "@" in g_email:
+                    st.session_state.google_user = {
+                        "email": g_email.strip().lower(),
+                        "name": g_name.strip() or g_email.split("@")[0].capitalize(),
+                    }
+                    st.success("Signed in with Google!")
+                    st.rerun()
+                else:
+                    st.error("Please enter a valid Google email.")
 
     # ➕ New Chat Button
     if st.button("➕  New Chat", use_container_width=True, type="primary"):

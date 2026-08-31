@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from typing import List, Optional, Any, Dict
 import datetime
 
-from app.core.database import get_db
+from app.core.database import get_db, SessionLocal
 from app.api.auth import get_current_user
 from app.models.user import User
 from app.models.chat import Conversation, Message
@@ -249,6 +249,8 @@ async def stream_chat(
 
     model_to_use = data.model or conv.model or current_user.preferred_model or "llama-3.3-70b-versatile"
 
+    conv_id = conv.id
+
     async def event_generator():
         full_response_accumulated = []
         try:
@@ -270,16 +272,24 @@ async def stream_chat(
 
             full_assistant_text = "".join(full_response_accumulated).strip()
             
-            # Save Assistant message in DB
-            asst_msg = Message(
-                conversation_id=conv.id,
-                role="assistant",
-                content=full_assistant_text or "No response generated.",
-                citations=rag_citations if rag_citations else None
-            )
-            db.add(asst_msg)
-            conv.updated_at = datetime.datetime.utcnow()
-            db.commit()
+            # Save Assistant message in DB with dedicated session
+            save_db = SessionLocal()
+            try:
+                asst_msg = Message(
+                    conversation_id=conv_id,
+                    role="assistant",
+                    content=full_assistant_text or "No response generated.",
+                    citations=rag_citations if rag_citations else None
+                )
+                save_db.add(asst_msg)
+                c_record = save_db.query(Conversation).filter(Conversation.id == conv_id).first()
+                if c_record:
+                    c_record.updated_at = datetime.datetime.utcnow()
+                save_db.commit()
+            except Exception as save_err:
+                print(f"Error saving assistant message: {save_err}")
+            finally:
+                save_db.close()
 
         except Exception as e:
             err_msg = f"\n[Streaming error: {str(e)}]"

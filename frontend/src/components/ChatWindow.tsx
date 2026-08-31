@@ -1,7 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Bot, User as UserIcon, Copy, RotateCcw, ThumbsUp, ThumbsDown, Check, FileText, Sparkles, Edit3 } from 'lucide-react';
+import {
+  Bot,
+  User as UserIcon,
+  Copy,
+  RotateCcw,
+  ThumbsUp,
+  ThumbsDown,
+  Check,
+  FileText,
+  Sparkles,
+  Edit3,
+  CheckCircle2,
+  Code2,
+  Cpu,
+  Layers,
+} from 'lucide-react';
 import { Message } from '@/types';
 import { CodeBlock } from './CodeBlock';
 
@@ -38,67 +53,116 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   // Welcoming State when no messages
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-2xl mx-auto">
-        <div className="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-4 shadow-xl">
-          <Bot className="w-10 h-10 text-emerald-400" />
+      <div className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-3xl mx-auto w-full select-none animate-fade-in">
+        {/* Soft Purple Avatar Badge */}
+        <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#7c4dff] to-[#bb86fc] p-0.5 shadow-2xl shadow-purple-950/50 mb-5">
+          <div className="w-full h-full bg-[#18181e] rounded-[22px] flex items-center justify-center border border-[#bb86fc]/40">
+            <Bot className="w-8 h-8 text-[#d0bcff]" />
+          </div>
         </div>
 
-        <h1 className="text-2xl font-bold text-white mb-2">How can I help you today?</h1>
-        <p className="text-sm text-zinc-400 mb-8 max-w-md">
-          Chat with hosted LLM endpoints, upload PDF/DOCX files for RAG document QA, and write clean code with instant streaming responses.
+        <h1 className="text-3xl font-bold text-white tracking-tight mb-2">
+          How can I help you today?
+        </h1>
+        <p className="text-sm text-zinc-400 mb-8 max-w-lg leading-relaxed">
+          Chat with local & cloud models, summarize documents with RAG, and write clean code with instant streaming responses.
         </p>
 
-        {/* Starter Suggestion Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+        {/* Status Chips from Reference Image (Enabled, Pressed, Selected) */}
+        <div className="flex items-center justify-center gap-2 mb-6 flex-wrap">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#282834] text-xs font-semibold text-zinc-200 border border-white/10">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Local & Cloud LLMs</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#bb86fc]/20 text-xs font-semibold text-[#d0bcff] border border-[#bb86fc]/40">
+            <CheckCircle2 className="w-3.5 h-3.5 text-[#bb86fc]" />
+            <span>RAG Document Analysis</span>
+          </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#282834] text-xs font-semibold text-zinc-200 border border-white/10">
+            <span>⚡ Zero Latency Stream</span>
+          </span>
+        </div>
+
+        {/* Material 3 Starter Suggestion Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
           <button
-            onClick={() => onSelectStarterCard('Explain Machine Learning algorithms and Deep Neural Networks in simple terms.')}
-            className="p-4 bg-[#212121] hover:bg-[#2f2f2f] border border-white/10 rounded-xl text-left transition group"
+            onClick={() =>
+              onSelectStarterCard('Explain Machine Learning algorithms and Deep Neural Networks in simple terms.')
+            }
+            className="p-5 rounded-3xl bg-[#1e1e24] hover:bg-[#25252e] border border-white/10 hover:border-[#bb86fc]/50 text-left transition duration-200 group shadow-lg"
           >
-            <div className="flex items-center gap-2 text-xs font-semibold text-white mb-1">
-              <Sparkles className="w-4 h-4 text-emerald-400 group-hover:rotate-12 transition-transform" />
-              <span>Explain Concepts</span>
+            <div className="flex items-center gap-2.5 text-xs font-bold text-white mb-1.5">
+              <div className="w-7 h-7 rounded-xl bg-[#bb86fc]/20 text-[#bb86fc] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Sparkles className="w-4 h-4" />
+              </div>
+              <span className="group-hover:text-[#bb86fc] transition">Explain Machine Learning</span>
             </div>
-            <p className="text-[11px] text-zinc-400">Explain Machine Learning and Neural Networks simply.</p>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Understand Transformers, self-attention mechanisms, and neural networks.
+            </p>
           </button>
 
           <button
-            onClick={() => onSelectStarterCard('Write a Python function to read a CSV file, parse columns, and generate summary statistics.')}
-            className="p-4 bg-[#212121] hover:bg-[#2f2f2f] border border-white/10 rounded-xl text-left transition group"
+            onClick={() =>
+              onSelectStarterCard(
+                'Write a Python script to parse CSV datasets, calculate rolling averages, and plot a chart.'
+              )
+            }
+            className="p-5 rounded-3xl bg-[#1e1e24] hover:bg-[#25252e] border border-white/10 hover:border-[#bb86fc]/50 text-left transition duration-200 group shadow-lg"
           >
-            <div className="flex items-center gap-2 text-xs font-semibold text-white mb-1">
-              <Sparkles className="w-4 h-4 text-emerald-400 group-hover:rotate-12 transition-transform" />
-              <span>Python Code Generator</span>
+            <div className="flex items-center gap-2.5 text-xs font-bold text-white mb-1.5">
+              <div className="w-7 h-7 rounded-xl bg-[#bb86fc]/20 text-[#bb86fc] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Code2 className="w-4 h-4" />
+              </div>
+              <span className="group-hover:text-[#bb86fc] transition">Python Data Script</span>
             </div>
-            <p className="text-[11px] text-zinc-400">Write Python CSV parser with summary stats.</p>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Generate Pandas functions with data cleaning and statistical metrics.
+            </p>
           </button>
 
           <button
-            onClick={() => onSelectStarterCard('What are the key differences between Supervised, Unsupervised, and Reinforcement Learning?')}
-            className="p-4 bg-[#212121] hover:bg-[#2f2f2f] border border-white/10 rounded-xl text-left transition group"
+            onClick={() =>
+              onSelectStarterCard(
+                'What are the key differences between Supervised, Unsupervised, and Reinforcement Learning?'
+              )
+            }
+            className="p-5 rounded-3xl bg-[#1e1e24] hover:bg-[#25252e] border border-white/10 hover:border-[#bb86fc]/50 text-left transition duration-200 group shadow-lg"
           >
-            <div className="flex items-center gap-2 text-xs font-semibold text-white mb-1">
-              <Sparkles className="w-4 h-4 text-emerald-400 group-hover:rotate-12 transition-transform" />
-              <span>AI & ML Comparison</span>
+            <div className="flex items-center gap-2.5 text-xs font-bold text-white mb-1.5">
+              <div className="w-7 h-7 rounded-xl bg-[#bb86fc]/20 text-[#bb86fc] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Layers className="w-4 h-4" />
+              </div>
+              <span className="group-hover:text-[#bb86fc] transition">AI Paradigms Comparison</span>
             </div>
-            <p className="text-[11px] text-zinc-400">Compare Supervised vs Unsupervised vs RL.</p>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Compare Supervised vs Unsupervised vs Reinforcement learning models.
+            </p>
           </button>
 
           <button
-            onClick={() => onSelectStarterCard('Summarize the attached document and highlight top 3 key takeaways with page references.')}
-            className="p-4 bg-[#212121] hover:bg-[#2f2f2f] border border-white/10 rounded-xl text-left transition group"
+            onClick={() =>
+              onSelectStarterCard(
+                'Summarize the uploaded document and extract top 3 key takeaways with exact page citations.'
+              )
+            }
+            className="p-5 rounded-3xl bg-[#1e1e24] hover:bg-[#25252e] border border-white/10 hover:border-[#bb86fc]/50 text-left transition duration-200 group shadow-lg"
           >
-            <div className="flex items-center gap-2 text-xs font-semibold text-white mb-1">
-              <Sparkles className="w-4 h-4 text-emerald-400 group-hover:rotate-12 transition-transform" />
-              <span>RAG Document Analysis</span>
+            <div className="flex items-center gap-2.5 text-xs font-bold text-white mb-1.5">
+              <div className="w-7 h-7 rounded-xl bg-[#bb86fc]/20 text-[#bb86fc] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <FileText className="w-4 h-4" />
+              </div>
+              <span className="group-hover:text-[#bb86fc] transition">Document RAG Analysis</span>
             </div>
-            <p className="text-[11px] text-zinc-400">Summarize uploaded document with page citations.</p>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Extract insights with exact page references and document quotes.
+            </p>
           </button>
         </div>
       </div>
     );
   }
 
-  // Render text blocks and code blocks safely
   const renderMessageContent = (content: string) => {
     if (content.includes('```')) {
       const parts = content.split(/(```[\s\S]*?```)/g);
@@ -110,13 +174,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           return <CodeBlock key={idx} language={lang} code={codeText} />;
         }
         return (
-          <p key={idx} className="whitespace-pre-wrap leading-relaxed">
+          <div key={idx} className="whitespace-pre-wrap leading-relaxed text-sm text-zinc-100">
             {part}
-          </p>
+          </div>
         );
       });
     }
-    return <p className="whitespace-pre-wrap leading-relaxed">{content}</p>;
+    return <div className="whitespace-pre-wrap leading-relaxed text-sm text-zinc-100">{content}</div>;
   };
 
   return (
@@ -128,21 +192,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         return (
           <div
             key={msg.id || idx}
-            className={`flex gap-4 ${isUser ? 'justify-end' : 'justify-start'}`}
+            className={`flex gap-3.5 ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`}
           >
             {!isUser && (
-              <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center shrink-0 mt-1">
-                <Bot className="w-4 h-4 text-emerald-400" />
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#7c4dff] to-[#bb86fc] flex items-center justify-center shrink-0 mt-1 shadow-md">
+                <Bot className="w-4 h-4 text-[#121214]" />
               </div>
             )}
 
-            <div className={`space-y-2 max-w-[85%] ${isUser ? 'items-end' : 'items-start'}`}>
-              {/* Message Box */}
+            <div className={`space-y-1.5 max-w-[85%] ${isUser ? 'items-end' : 'items-start'}`}>
+              {/* Message Bubble */}
               <div
-                className={`p-4 rounded-2xl text-sm ${
+                className={`p-4 rounded-3xl text-sm leading-relaxed ${
                   isUser
-                    ? 'bg-[#2f2f2f] text-white rounded-br-none border border-white/10'
-                    : 'bg-[#1e1e1e]/60 text-zinc-100 rounded-bl-none border border-white/10'
+                    ? 'bg-[#2b2b36] text-white rounded-tr-sm border border-white/10 shadow-lg'
+                    : 'bg-[#1e1e24] text-zinc-100 rounded-tl-sm border border-white/10 shadow-md'
                 }`}
               >
                 {isEditing ? (
@@ -150,13 +214,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     <textarea
                       value={editText}
                       onChange={(e) => setEditText(e.target.value)}
-                      className="w-full bg-[#212121] text-white p-2 rounded-lg text-xs outline-none border border-emerald-500"
+                      className="w-full bg-[#18181e] text-white p-2.5 rounded-xl text-xs outline-none border border-[#bb86fc]"
                       rows={3}
                     />
                     <div className="flex justify-end gap-2 text-xs">
                       <button
                         onClick={() => setEditingMsgIndex(null)}
-                        className="px-2.5 py-1 bg-zinc-700 rounded text-zinc-300"
+                        className="px-3 py-1 bg-zinc-800 rounded-lg text-zinc-300 hover:bg-zinc-700 transition"
                       >
                         Cancel
                       </button>
@@ -165,9 +229,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                           onEditUserMessage(idx, editText);
                           setEditingMsgIndex(null);
                         }}
-                        className="px-2.5 py-1 bg-emerald-600 rounded text-white font-medium"
+                        className="px-3 py-1 bg-[#7c4dff] rounded-lg text-white font-medium hover:bg-[#9266ff] transition"
                       >
-                        Save & Submit
+                        Save & Send
                       </button>
                     </div>
                   </div>
@@ -177,17 +241,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
                 {/* Citations Badges */}
                 {msg.citations && msg.citations.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-white/10 space-y-1.5">
-                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
+                  <div className="mt-3.5 pt-3 border-t border-white/10 space-y-2">
+                    <div className="flex items-center gap-1.5 text-[11px] font-semibold text-[#bb86fc]">
                       <FileText className="w-3.5 h-3.5" />
-                      <span>Document Citations & Page References:</span>
+                      <span>Document Citations:</span>
                     </div>
                     {msg.citations.map((c, cIdx) => (
                       <div
                         key={cIdx}
-                        className="bg-[#2f2f2f] p-2 rounded border border-emerald-500/30 text-[11px] text-zinc-300"
+                        className="bg-[#282834] p-2.5 rounded-xl border border-[#bb86fc]/30 text-[11px] text-zinc-300"
                       >
-                        <span className="font-semibold text-white">
+                        <span className="font-semibold text-[#d0bcff]">
                           [{c.filename}, Page {c.page}]
                         </span>{' '}
                         — <i>"{c.text}"</i>
@@ -198,14 +262,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
 
               {/* Action Toolbar */}
-              <div className="flex items-center gap-2 text-zinc-400 text-xs px-1">
+              <div className="flex items-center gap-2 text-zinc-400 text-xs px-2 pt-0.5">
                 <button
                   onClick={() => handleCopy(msg.id || `${idx}`, msg.content)}
-                  className="hover:text-white transition flex items-center gap-1"
-                  title="Copy message"
+                  className="hover:text-white p-1 rounded hover:bg-white/5 transition flex items-center gap-1"
+                  title="Copy text"
                 >
                   {copiedId === (msg.id || `${idx}`) ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                    <Check className="w-3.5 h-3.5 text-[#bb86fc]" />
                   ) : (
                     <Copy className="w-3.5 h-3.5" />
                   )}
@@ -217,7 +281,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       setEditingMsgIndex(idx);
                       setEditText(msg.content);
                     }}
-                    className="hover:text-white transition"
+                    className="hover:text-white p-1 rounded hover:bg-white/5 transition"
                     title="Edit message"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
@@ -227,7 +291,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 {!isUser && idx === messages.length - 1 && !isStreaming && (
                   <button
                     onClick={onRegenerate}
-                    className="hover:text-white transition flex items-center gap-1"
+                    className="hover:text-white p-1 rounded hover:bg-white/5 transition flex items-center gap-1"
                     title="Regenerate response"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
@@ -238,8 +302,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   <>
                     <button
                       onClick={() => handleFeedback(msg.id || `${idx}`, 'upvote')}
-                      className={`hover:text-emerald-400 transition ${
-                        feedbackState[msg.id || `${idx}`] === 'upvote' ? 'text-emerald-400' : ''
+                      className={`p-1 rounded hover:bg-white/5 transition ${
+                        feedbackState[msg.id || `${idx}`] === 'upvote'
+                          ? 'text-[#bb86fc]'
+                          : 'hover:text-[#bb86fc]'
                       }`}
                       title="Good response"
                     >
@@ -247,8 +313,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     </button>
                     <button
                       onClick={() => handleFeedback(msg.id || `${idx}`, 'downvote')}
-                      className={`hover:text-rose-400 transition ${
-                        feedbackState[msg.id || `${idx}`] === 'downvote' ? 'text-rose-400' : ''
+                      className={`p-1 rounded hover:bg-white/5 transition ${
+                        feedbackState[msg.id || `${idx}`] === 'downvote'
+                          ? 'text-rose-400'
+                          : 'hover:text-rose-400'
                       }`}
                       title="Bad response"
                     >
@@ -260,8 +328,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
 
             {isUser && (
-              <div className="w-8 h-8 rounded-full bg-[#2f2f2f] border border-white/20 flex items-center justify-center shrink-0 mt-1">
-                <UserIcon className="w-4 h-4 text-emerald-400" />
+              <div className="w-8 h-8 rounded-xl bg-[#2b2b36] border border-white/20 flex items-center justify-center shrink-0 mt-1 shadow-md">
+                <UserIcon className="w-4 h-4 text-[#bb86fc]" />
               </div>
             )}
           </div>

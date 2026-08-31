@@ -16,13 +16,11 @@ export default function Home() {
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [activeMessages, setActiveMessages] = useState<Message[]>([]);
   const [activeModel, setActiveModel] = useState('qwen-2.5-0.5b-local');
-  
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDocDrawerOpen, setIsDocDrawerOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
 
-  // Load user session on mount
   useEffect(() => {
     initUserSession();
   }, []);
@@ -34,7 +32,6 @@ export default function Home() {
       setActiveModel(storedUser.preferred_model || 'qwen-2.5-0.5b-local');
       fetchConversations();
     } else {
-      // Auto-authenticate as guest for instant zero-friction chat access
       try {
         const res = await apiClient.post('/auth/guest');
         if (res.data && res.data.access_token && res.data.user) {
@@ -42,10 +39,9 @@ export default function Home() {
           setStoredAuth(res.data.access_token, res.data.user);
           setUser(res.data.user);
         } else {
-          // Local guest user fallback
           const localGuest: User = {
             id: 'guest_local',
-            email: 'guest@platform.local',
+            email: 'guest@chatgpt.platform',
             full_name: 'Guest User',
             preferred_model: 'qwen-2.5-0.5b-local',
             auth_provider: 'guest',
@@ -56,7 +52,7 @@ export default function Home() {
       } catch {
         const localGuest: User = {
           id: 'guest_local',
-          email: 'guest@platform.local',
+          email: 'guest@chatgpt.platform',
           full_name: 'Guest User',
           preferred_model: 'qwen-2.5-0.5b-local',
           auth_provider: 'guest',
@@ -70,19 +66,37 @@ export default function Home() {
   const fetchConversations = async () => {
     try {
       const res = await apiClient.get('/chat/conversations');
-      if (Array.isArray(res.data)) {
+      if (Array.isArray(res.data) && res.data.length > 0) {
         setConversations(res.data);
-        if (res.data.length > 0 && !activeConvId) {
+        if (!activeConvId) {
           selectConversation(res.data[0].id);
         }
+      } else {
+        const defaultConv: Conversation = {
+          id: `conv_${Date.now()}`,
+          title: 'Welcome to ChatGPT',
+          model: 'qwen-2.5-0.5b-local',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          messages: [],
+        };
+        setConversations([defaultConv]);
+        setActiveConvId(defaultConv.id);
+        setActiveMessages([]);
       }
     } catch {
-      // ignore
+      // Fallback
     }
   };
 
   const selectConversation = async (id: string) => {
     setActiveConvId(id);
+    const existing = conversations.find((c) => c.id === id);
+    if (existing && existing.messages && existing.messages.length > 0) {
+      setActiveMessages(existing.messages);
+      return;
+    }
+
     try {
       const res = await apiClient.get(`/chat/conversations/${id}`);
       if (res.data && Array.isArray(res.data.messages)) {
@@ -109,7 +123,6 @@ export default function Home() {
       setActiveConvId(newConv.id);
       setActiveMessages([]);
     } catch {
-      // Fallback local new chat state
       const localId = `local_${Date.now()}`;
       const localConv: Conversation = {
         id: localId,
@@ -128,35 +141,29 @@ export default function Home() {
   const handleRename = async (id: string, newTitle: string) => {
     try {
       await apiClient.patch(`/chat/conversations/${id}`, { title: newTitle });
-      setConversations(conversations.map((c) => (c.id === id ? { ...c, title: newTitle } : c)));
-    } catch {
-      setConversations(conversations.map((c) => (c.id === id ? { ...c, title: newTitle } : c)));
-    }
+    } catch {}
+    setConversations(conversations.map((c) => (c.id === id ? { ...c, title: newTitle } : c)));
   };
 
   const handleDelete = async (id: string) => {
     try {
       await apiClient.delete(`/chat/conversations/${id}`);
-      const remaining = conversations.filter((c) => c.id !== id);
-      setConversations(remaining);
-      if (activeConvId === id) {
-        if (remaining.length > 0) {
-          selectConversation(remaining[0].id);
-        } else {
-          setActiveConvId(null);
-          setActiveMessages([]);
-        }
+    } catch {}
+    const remaining = conversations.filter((c) => c.id !== id);
+    setConversations(remaining);
+    if (activeConvId === id) {
+      if (remaining.length > 0) {
+        selectConversation(remaining[0].id);
+      } else {
+        setActiveConvId(null);
+        setActiveMessages([]);
       }
-    } catch {
-      const remaining = conversations.filter((c) => c.id !== id);
-      setConversations(remaining);
     }
   };
 
   const handleSendMessage = async (text: string, attachedDocId?: string) => {
     let currentId = activeConvId;
 
-    // Create new conversation if none active
     if (!currentId) {
       try {
         const res = await apiClient.post('/chat/conversations', {
@@ -183,7 +190,6 @@ export default function Home() {
     setActiveMessages(updatedMessages);
     setIsStreaming(true);
 
-    // Placeholder assistant message for streaming
     const assistantMessageId = `asst_${Date.now()}`;
     const assistantMessage: Message = {
       id: assistantMessageId,
@@ -238,21 +244,23 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#212121]">
+    <div className="flex h-screen overflow-hidden bg-[#121214]">
       {/* Sidebar */}
       <Sidebar
         conversations={conversations}
         activeId={activeConvId}
         isOpen={isSidebarOpen}
+        user={user}
         onSelect={selectConversation}
         onNewChat={handleNewChat}
         onRename={handleRename}
         onDelete={handleDelete}
         onOpenDocuments={() => setIsDocDrawerOpen(true)}
+        onOpenSettings={() => (window.location.href = '/settings')}
       />
 
-      {/* Main Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+      {/* Main Workspace */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#121214]">
         <Header
           user={user}
           activeModel={activeModel}
