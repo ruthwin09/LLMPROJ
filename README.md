@@ -1,99 +1,110 @@
-# 🔬 LLM X-Ray: Interactive Visualization of LLM Inference
+# 🚀 ChatGPT-Style AI Platform — Project Phase 3
 
-[![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.14-blue.svg)](https://www.python.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.2+-ee4c2c.svg)](https://pytorch.org/)
-[![HuggingFace](https://img.shields.io/badge/HuggingFace-Transformers-yellow.svg)](https://huggingface.co/)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.35+-FF4B4B.svg)](https://streamlit.io/)
-[![License](https://img.shields.io/badge/License-Apache%202.0-green.svg)](LICENSE)
-
-> **PROJECT PHASE 1 — LLM X-RAY**  
-> An interactive, high-precision visual inspection tool for local Large Language Model inference built with **PyTorch**, **Hugging Face Transformers**, **Streamlit**, and **Plotly**.
+A deployable, multi-user **ChatGPT-Style AI Web Application** built with **Next.js 14**, **TypeScript**, **Tailwind CSS**, **FastAPI**, **PostgreSQL**, **JWT & Google OAuth**, **Hosted LLM Endpoints**, and a **RAG Document Engine** for PDF, DOCX, TXT, CSV, and JSON QA with page citations.
 
 ---
 
-## 📖 Project Overview
+## 🌟 Key Architecture & Features
 
-Large Language Models (LLMs) are often treated as black boxes. **LLM X-Ray** makes the internal inference lifecycle observable, interpretable, and visually intuitive in real-time on a personal laptop without requiring external APIs or paid services.
-
-### 🔄 Core Inference Lifecycle
-
-```
-Input Prompt ➔ Tokenization ➔ Token IDs ➔ Embeddings ➔ Transformer Layers (28) ➔ Multi-Head Attention ➔ Hidden States ➔ LM Head Logits ➔ Softmax Probabilities ➔ Next Token Generation ➔ Final Response
-```
-
----
-
-## 🎯 Target Model
-
-- **Model:** `Qwen/Qwen2.5-1.5B-Instruct` (with fast option for `Qwen2.5-0.5B-Instruct`)
-- **Parameters:** 1.54 Billion
-- **Transformer Layers:** 28 Layers
-- **Attention Heads:** 12 Query Heads (Grouped Query Attention)
-- **Hidden Dimension:** 1536
-- **Vocabulary Size:** 151,936
-- **License:** Apache 2.0
-
----
-
-## 🏗️ Architecture & Features
-
-| Step | Component | Description & Visualizations |
+| Layer | Technology | Key Capabilities |
 |---|---|---|
-| **Step 1** | **Setup & Environment** | Modular Python architecture with requirements management. |
-| **Step 2** | **Model & Hooks** | PyTorch + HF pipeline capturing attention weights & hidden activations. |
-| **Step 3** | **Interactive Chat Interface** | Modern UI with temperature, top-p, top-k, and max token controls. |
-| **Step 4** | **Tokenization & IDs** | Color-coded token chips, token IDs tensor, compression ratio, byte lengths. |
-| **Step 5** | **Input Embeddings & PCA** | 2D & 3D PCA token manifold projections, embedding heatmaps, vector statistics. |
-| **Step 6 & 8** | **Transformer & Hidden States** | Hidden state vector magnitude trajectory across 28 layers and layer drift matrix. |
-| **Step 7** | **Multi-Head Attention** | Interactive $N \times N$ attention heatmaps with layer & head sliders. |
-| **Step 9** | **Logits & Probabilities** | LM head logit distribution bar chart, top-K Softmax candidate rankings, entropy. |
-| **Step 10** | **Step-by-Step Rollout** | Auto-regressive generation stepper with per-step candidate decisions. |
-
----
-
-## 🚀 Quick Start
-
-### 1. Clone the Repository
-```bash
-git clone https://github.com/ruthwin09/LLMPROJ.git
-cd LLMPROJ
-```
-
-### 2. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 3. Run the Streamlit Application
-```bash
-streamlit run app.py
-```
-
-Open your browser at `http://localhost:8501`.
+| **Frontend UI** | **Next.js + React + TypeScript + Tailwind** | ChatGPT dark UX, responsive sidebar, streaming typing effect, markdown parsing, code syntax highlighting + copy, upvote/downvote feedback, user settings. |
+| **Backend API** | **FastAPI (Python)** | Async endpoints, JWT bearer auth, Google OAuth login, Server-Sent Events (SSE) token streaming, database session management. |
+| **Hosted LLMs** | **Groq / OpenAI / Gemini / OpenRouter** | Zero local GPU needed; streams completions from hosted cloud API endpoints (`Llama 3.3 70B`, `Qwen 2.5 Coder`, `GPT-4o Mini`, `Gemini 1.5 Flash`). |
+| **RAG Engine** | **PyPDF + python-docx + Pandas + TF-IDF Vector Search** | Extracts text from PDF, DOCX, TXT, CSV, JSON; chunks content; retrieves contextual passages with page & file citations (`[Document.pdf, Page 3]`). |
+| **Database** | **PostgreSQL / SQLite** | Multi-tenant user schema, persistent chat history, document chunk indices. |
 
 ---
 
 ## 📂 Project Directory Structure
 
 ```
-LLM-XRay/
-├── app.py              # Main Streamlit web application & UI layout
-├── model.py            # Model loader, forward pass hook extractor, and auto-regressive generation
-├── tokenizer.py        # Tokenizer analysis and HTML chip visualizer
-├── visualization.py    # Plotly interactive charting engine (PCA, Attention, Logits, Hidden States)
-├── requirements.txt    # Project dependencies
-├── .gitignore          # Git ignore configuration
-└── README.md           # Documentation
+LLM-PROJECT/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   ├── auth.py          # Signup, Login, Google OAuth, Profile, Password Reset
+│   │   │   ├── chat.py          # Multi-turn SSE streaming, conversation CRUD, search
+│   │   │   ├── upload.py        # PDF, DOCX, TXT, CSV, JSON ingestion & RAG search
+│   │   │   └── settings.py      # User settings & API key manager
+│   │   ├── core/
+│   │   │   ├── config.py        # ENV configuration & settings
+│   │   │   ├── database.py      # PostgreSQL / SQLite async engine
+│   │   │   └── security.py      # Bcrypt password hashing & JWT token handling
+│   │   ├── models/
+│   │   │   ├── user.py          # User & Auth schemas
+│   │   │   ├── chat.py          # Conversation & Message schemas
+│   │   │   └── document.py      # Document & Chunk schemas
+│   │   ├── services/
+│   │   │   ├── llm_service.py   # Hosted LLM streaming client (Groq/OpenAI/Gemini/OpenRouter)
+│   │   │   └── rag_service.py   # File parsing, text chunking, and similarity search
+│   │   └── main.py              # FastAPI server entry point
+│   ├── requirements.txt         # Backend Python dependencies
+│   └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx       # Root layout
+│   │   │   ├── page.tsx         # Main ChatGPT platform view
+│   │   │   ├── login/page.tsx   # Login page
+│   │   │   ├── register/page.tsx# Registration page
+│   │   │   └── settings/page.tsx# User profile & settings page
+│   │   ├── components/
+│   │   │   ├── Sidebar.tsx      # Conversation list, search, rename, delete
+│   │   │   ├── Header.tsx       # Model picker, dark mode, user menu
+│   │   │   ├── ChatWindow.tsx   # Chat bubble streaming, markdown, syntax highlighter
+│   │   │   ├── ChatInput.tsx    # Message input + attachment button
+│   │   │   ├── DocumentDrawer.tsx# RAG file upload drawer
+│   │   │   └── CodeBlock.tsx    # Code syntax block with copy button
+│   │   ├── lib/
+│   │   │   ├── api.ts           # Axios & SSE streaming reader
+│   │   │   └── auth.ts          # Token storage manager
+│   │   └── types/
+│   │       └── index.ts         # TypeScript definitions
+│   ├── package.json
+│   └── tailwind.config.js
+└── README.md
 ```
 
 ---
 
-## 🛠️ Technology Stack
+## ⚡ Local Quickstart Guide
 
-- **Python 3.10+**
-- **PyTorch**: Local tensor computation and neural network execution
-- **Hugging Face Transformers**: Model architecture and tokenizer
-- **Streamlit**: Web dashboard interface
-- **Plotly**: Interactive 2D/3D graphs, heatmaps, and distributions
-- **Scikit-Learn**: PCA dimensionality reduction
-- **NumPy & Pandas**: High-performance data structures and matrix operations
+### 1. Run FastAPI Backend
+
+```bash
+cd backend
+python -m venv .venv
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+source .venv/bin/activate
+
+pip install -r requirements.txt
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+FastAPI server runs at `http://localhost:8000` (API Docs: `http://localhost:8000/docs`).
+
+### 2. Run Next.js Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open your browser at **`http://localhost:3000`**.
+
+---
+
+## 🌐 Cloud Deployment Guide
+
+1. **Backend (Render / Railway / Fly.io)**:
+   - Deploy `backend/` directory as Python web service.
+   - Set environment variables (`DATABASE_URL`, `GROQ_API_KEY`, `OPENAI_API_KEY`, `SECRET_KEY`).
+2. **Database (Supabase / Neon / Render PostgreSQL)**:
+   - Provide standard PostgreSQL string `postgresql://user:pass@host:5432/dbname`.
+3. **Frontend (Vercel / Netlify)**:
+   - Deploy `frontend/` directory to Vercel.
+   - Set `NEXT_PUBLIC_API_URL` to backend URL.

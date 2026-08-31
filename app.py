@@ -1,11 +1,15 @@
 """
 =============================================================================
- PROJECT PHASE 1 - LLM X-RAY: Interactive Visualization of LLM Inference
- Complete Streamlit Application implementing Steps 1 to 10
+ ChatGPT Interface with Integrated Deep Neural Inspection (LLM X-Ray)
+ Fully functional multi-turn AI assistant with multi-session chat history,
+ real-time streaming generation, customizable personas, and deep X-Ray telemetry.
 =============================================================================
 """
 
 import time
+import json
+import uuid
+from typing import Dict, Any, List
 import streamlit as st
 import numpy as np
 import pandas as pd
@@ -15,8 +19,11 @@ from tokenizer import tokenize_input, render_token_chips_html
 from model import (
     DEFAULT_MODEL_ID,
     LIGHT_MODEL_ID,
+    SYSTEM_PERSONAS,
     get_system_device,
     load_model_and_tokenizer,
+    generate_chat_response,
+    run_xray_on_demand,
     run_xray_forward_pass,
     run_step_by_step_generation,
     TORCH_AVAILABLE
@@ -34,115 +41,215 @@ from visualization import (
 )
 
 # ---------------------------------------------------------------------------
-# Page Configuration & UI Theme Styling
+# Page Configuration & ChatGPT Modern Styling
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="LLM X-Ray | Interactive Visualization of LLM Inference",
-    page_icon="🔬",
+    page_title="ChatGPT",
+    page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom High-End Modern CSS
+# Custom High-End ChatGPT CSS Styling
 st.markdown("""
 <style>
-    /* Global App Container */
-    .main .block-container {
-        padding-top: 1.8rem;
-        padding-bottom: 3rem;
-        max-width: 1300px;
-    }
+    /* Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500;600&display=swap');
     
-    /* Sleek Gradient Hero Header */
-    .hero-header {
-        background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 50%, rgba(56, 189, 248, 0.12) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 16px;
-        padding: 24px 30px;
-        margin-bottom: 24px;
-        backdrop-filter: blur(10px);
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
-    }
-    .hero-title {
-        font-size: 2.2rem;
-        font-weight: 800;
-        background: linear-gradient(90deg, #818cf8, #c084fc, #38bdf8);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 6px;
-    }
-    .hero-subtitle {
-        font-size: 1.05rem;
-        color: #94a3b8;
-        margin-bottom: 14px;
-    }
-    .pipeline-badge-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        align-items: center;
-        margin-top: 10px;
-    }
-    .pipeline-step {
-        background: rgba(30, 41, 59, 0.85);
-        border: 1px solid rgba(99, 102, 241, 0.35);
-        color: #e2e8f0;
-        padding: 3px 9px;
-        border-radius: 6px;
-        font-size: 0.78rem;
-        font-weight: 500;
-    }
-    .pipeline-arrow {
-        color: #818cf8;
-        font-weight: 700;
-        font-size: 0.8rem;
+    html, body, [class*="css"] {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
-    /* Cards & Containers */
-    .metric-card {
-        background: rgba(30, 41, 59, 0.6);
+    /* Main Container Padding */
+    .main .block-container {
+        padding-top: 1.2rem;
+        padding-bottom: 3.5rem;
+        max-width: 1050px;
+    }
+
+    /* ChatGPT Dark Sidebar Theme */
+    [data-testid="stSidebar"] {
+        background-color: #171717;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    
+    [data-testid="stSidebar"] .block-container {
+        padding-top: 1.2rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* New Chat Button */
+    .new-chat-btn {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 10px 14px;
+        background: #212121;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 8px;
+        color: #f3f4f6;
+        font-size: 0.92rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        margin-bottom: 12px;
+        text-decoration: none;
+    }
+    .new-chat-btn:hover {
+        background: #2f2f2f;
+        border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    /* Top Navigation Header */
+    .chatgpt-nav-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 18px;
+        background: rgba(33, 33, 33, 0.75);
+        backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 12px;
-        padding: 16px 20px;
-        text-align: center;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        margin-bottom: 20px;
     }
-    .metric-title {
-        font-size: 0.82rem;
-        color: #94a3b8;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 4px;
-    }
-    .metric-value {
-        font-size: 1.5rem;
+    .nav-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 1.15rem;
         font-weight: 700;
         color: #f8fafc;
     }
-    
-    /* Result Box */
-    .response-card {
-        background: rgba(15, 23, 42, 0.85);
+    .nav-badge {
+        background: rgba(16, 185, 129, 0.15);
         border: 1px solid rgba(16, 185, 129, 0.4);
+        color: #34d399;
+        font-size: 0.75rem;
+        padding: 2px 8px;
         border-radius: 12px;
-        padding: 20px;
-        margin-top: 14px;
-        font-size: 1.05rem;
-        line-height: 1.6;
-        color: #f1f5f9;
-        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.1);
+        font-weight: 600;
+    }
+    .nav-device-badge {
+        background: rgba(99, 102, 241, 0.15);
+        border: 1px solid rgba(99, 102, 241, 0.4);
+        color: #818cf8;
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-weight: 600;
     }
 
-    /* Tabs Styling */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+    /* Welcoming Empty State Hero */
+    .welcome-container {
+        text-align: center;
+        padding: 40px 20px 20px 20px;
+        margin-bottom: 20px;
     }
-    .stTabs [data-baseweb="tab"] {
-        background-color: rgba(30, 41, 59, 0.5);
-        border-radius: 8px 8px 0 0;
-        padding: 8px 16px;
+    .welcome-avatar {
+        font-size: 3rem;
+        margin-bottom: 12px;
+        display: inline-block;
+        background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .welcome-title {
+        font-size: 1.85rem;
+        font-weight: 700;
+        color: #f8fafc;
+        margin-bottom: 8px;
+    }
+    .welcome-subtitle {
+        font-size: 0.98rem;
+        color: #94a3b8;
+        max-width: 600px;
+        margin: 0 auto 28px auto;
+        line-height: 1.5;
+    }
+
+    /* Starter Suggestion Cards */
+    .starter-cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 12px;
+        max-width: 800px;
+        margin: 0 auto 24px auto;
+    }
+    .starter-card {
+        background: #212121;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 14px 16px;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .starter-card:hover {
+        background: #2f2f2f;
+        border-color: rgba(255, 255, 255, 0.25);
+        transform: translateY(-2px);
+    }
+    .starter-card-icon {
+        font-size: 1.2rem;
+        margin-bottom: 6px;
+    }
+    .starter-card-title {
+        font-size: 0.88rem;
         font-weight: 600;
-        border: 1px solid rgba(255, 255, 255, 0.05);
+        color: #f1f5f9;
+        margin-bottom: 4px;
+    }
+    .starter-card-desc {
+        font-size: 0.78rem;
+        color: #94a3b8;
+        line-height: 1.4;
+    }
+
+    /* Message Styling */
+    .stChatMessage {
+        background-color: transparent !important;
+        border-radius: 12px;
+        padding: 12px 14px;
+        margin-bottom: 12px;
+    }
+    
+    /* Generation Stats Pill */
+    .stats-pill-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 8px;
+        margin-bottom: 12px;
+    }
+    .stat-pill {
+        background: rgba(30, 41, 59, 0.7);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 2px 8px;
+        font-size: 0.72rem;
+        color: #94a3b8;
+    }
+    .stat-pill b {
+        color: #e2e8f0;
+    }
+
+    /* Inspection Container */
+    .xray-expander {
+        background: #18181b;
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 10px;
+        padding: 12px;
+        margin-top: 10px;
+    }
+
+    /* Footer Disclaimer */
+    .chatgpt-footer {
+        text-align: center;
+        font-size: 0.74rem;
+        color: #71717a;
+        margin-top: 18px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -157,264 +264,222 @@ def get_cached_model(model_id: str, device: str):
 
 
 # ---------------------------------------------------------------------------
-# Sidebar: Model, Compute & Hyperparameter Controls (Step 6)
+# Session State Initialization
+# ---------------------------------------------------------------------------
+if "sessions" not in st.session_state:
+    initial_id = str(uuid.uuid4())[:8]
+    st.session_state.sessions = {
+        initial_id: {
+            "id": initial_id,
+            "title": "New Chat",
+            "created_at": time.time(),
+            "messages": []
+        }
+    }
+    st.session_state.current_session_id = initial_id
+
+if "current_session_id" not in st.session_state:
+    st.session_state.current_session_id = list(st.session_state.sessions.keys())[0]
+
+if "view_mode" not in st.session_state:
+    st.session_state.view_mode = "chat"
+
+if "suggested_prompt" not in st.session_state:
+    st.session_state.suggested_prompt = None
+
+# Ensure active session exists
+if st.session_state.current_session_id not in st.session_state.sessions:
+    new_id = str(uuid.uuid4())[:8]
+    st.session_state.sessions[new_id] = {
+        "id": new_id,
+        "title": "New Chat",
+        "created_at": time.time(),
+        "messages": []
+    }
+    st.session_state.current_session_id = new_id
+
+active_session = st.session_state.sessions[st.session_state.current_session_id]
+
+
+# ---------------------------------------------------------------------------
+# Sidebar: ChatGPT Navigation, Conversations & Model Controls
 # ---------------------------------------------------------------------------
 with st.sidebar:
-    st.image("https://raw.githubusercontent.com/huggingface/transformers/main/docs/source/en/imgs/transformers_logo_name.png", width=180)
-    st.markdown("### ⚙️ Model & Hardware Controls")
+    # App Branding
+    st.markdown("""
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 16px;">
+        <span style="font-size: 1.7rem;">🤖</span>
+        <div>
+            <div style="font-size: 1.15rem; font-weight: 700; color: #f8fafc; line-height: 1.1;">ChatGPT</div>
+            <div style="font-size: 0.75rem; color: #94a3b8;">with Deep Neural X-Ray</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
+    # ➕ New Chat Button
+    if st.button("➕  New Chat", use_container_width=True, type="primary"):
+        new_sess_id = str(uuid.uuid4())[:8]
+        st.session_state.sessions[new_sess_id] = {
+            "id": new_sess_id,
+            "title": "New Chat",
+            "created_at": time.time(),
+            "messages": []
+        }
+        st.session_state.current_session_id = new_sess_id
+        st.session_state.suggested_prompt = None
+        st.rerun()
+
+    st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+
+    # Chat Sessions List
+    st.markdown("<div style='font-size: 0.78rem; font-weight: 600; color: #a1a1aa; text-transform: uppercase; margin-bottom: 6px;'>Recent Conversations</div>", unsafe_allow_html=True)
+    
+    session_keys = list(st.session_state.sessions.keys())
+    # Sort sessions by created_at descending
+    session_keys.sort(key=lambda k: st.session_state.sessions[k]["created_at"], reverse=True)
+
+    for s_id in session_keys:
+        sess = st.session_state.sessions[s_id]
+        is_selected = (s_id == st.session_state.current_session_id)
+        
+        # Display session button with active highlight
+        btn_label = f"💬  {sess['title'][:24]}..." if len(sess['title']) > 24 else f"💬  {sess['title']}"
+        if is_selected:
+            btn_label = f"👉 {sess['title'][:22]}..." if len(sess['title']) > 22 else f"👉 {sess['title']}"
+
+        col_s1, col_s2 = st.columns([5, 1])
+        with col_s1:
+            if st.button(btn_label, key=f"sess_btn_{s_id}", use_container_width=True, disabled=is_selected):
+                st.session_state.current_session_id = s_id
+                st.session_state.suggested_prompt = None
+                st.rerun()
+        with col_s2:
+            if len(st.session_state.sessions) > 1:
+                if st.button("🗑️", key=f"del_sess_{s_id}", help="Delete chat"):
+                    del st.session_state.sessions[s_id]
+                    if st.session_state.current_session_id == s_id:
+                        st.session_state.current_session_id = list(st.session_state.sessions.keys())[0]
+                    st.rerun()
+
+    st.markdown("---")
+
+    # Model & Compute Configuration
+    st.markdown("#### ⚙️ Model & Hardware")
+    
     detected_device = get_system_device()
     
-    model_choice = st.selectbox(
-        "Select Hugging Face Model",
+    selected_model = st.selectbox(
+        "Model Architecture",
         options=[
-            DEFAULT_MODEL_ID,
-            LIGHT_MODEL_ID
+            LIGHT_MODEL_ID,
+            DEFAULT_MODEL_ID
         ],
         index=0,
-        help="Qwen2.5-1.5B-Instruct has 28 Transformer layers and 1.54B parameters as specified in the project PDF."
+        help="Qwen2.5-0.5B is fast and responsive for local chat; Qwen2.5-1.5B provides 28 Transformer layers and deeper reasoning."
     )
 
-    device_option = st.radio(
+    device_options = ["Auto-Detect (" + detected_device.upper() + ")", "cpu", "cuda"] if detected_device == "cuda" else ["Auto-Detect (CPU)", "cpu"]
+    selected_device_radio = st.radio(
         "Compute Device",
-        options=["Auto-Detect (" + detected_device.upper() + ")", "cpu", "cuda"] if detected_device == "cuda" else ["Auto-Detect (CPU)", "cpu"],
+        options=device_options,
         index=0
     )
-    active_device = "cuda" if "cuda" in device_option.lower() else "cpu"
+    active_device = "cuda" if "cuda" in selected_device_radio.lower() else "cpu"
 
     st.markdown("---")
-    st.markdown("### 🎛️ Generation Hyperparameters")
 
+    # Persona / System Instructions
+    st.markdown("#### 🎭 Persona & Instructions")
+    persona_choice = st.selectbox("Preset Persona", list(SYSTEM_PERSONAS.keys()), index=0)
+    
+    custom_system_prompt = SYSTEM_PERSONAS[persona_choice]
+    if persona_choice == "Custom Persona":
+        custom_system_prompt = st.text_area("Custom System Prompt", value="You are a helpful AI assistant.", height=80)
+    else:
+        with st.expander("View System Instructions"):
+            st.caption(custom_system_prompt)
+
+    st.markdown("---")
+
+    # Generation Hyperparameters
+    st.markdown("#### 🎛️ Hyperparameters")
     temperature = st.slider("Temperature", min_value=0.0, max_value=1.5, value=0.7, step=0.05,
                             help="Lower values make output deterministic; higher values increase variety.")
-    top_p = st.slider("Top-P (Nucleus Sampling)", min_value=0.1, max_value=1.0, value=0.9, step=0.05,
-                      help="Accumulates candidates until cumulative probability reaches P.")
-    top_k = st.slider("Top-K Filtering", min_value=1, max_value=100, value=50, step=1,
-                      help="Restricts generation to top K probability candidates.")
-    max_tokens = st.slider("Max New Tokens", min_value=5, max_value=64, value=20, step=5,
-                           help="Maximum number of tokens to generate auto-regressively.")
+    top_p = st.slider("Top-P (Nucleus Sampling)", min_value=0.1, max_value=1.0, value=0.9, step=0.05)
+    top_k = st.slider("Top-K Filtering", min_value=1, max_value=100, value=50, step=1)
+    max_tokens = st.slider("Max Output Tokens", min_value=16, max_value=300, value=100, step=16)
 
     st.markdown("---")
-    st.markdown("### ℹ️ Architecture Specs")
-    st.info(
-        "• **Model:** `Qwen2.5-1.5B-Instruct`\n"
-        "• **Layers:** 28 Transformer Blocks\n"
-        "• **Attention Heads:** 12 Query / 2 Key-Value (GQA)\n"
-        "• **Hidden Dim:** 1536\n"
-        "• **Vocab Size:** 151,936\n"
-        "• **Framework:** PyTorch + HF Transformers"
-    )
+    
+    # View Mode Toggle & Chat Management
+    st.markdown("#### 🛠️ Options & Actions")
+    show_xray_inline = st.checkbox("🔬 Always Auto-Expand X-Ray", value=False, help="Automatically open X-Ray inspection panel under every response.")
+
+    col_act1, col_act2 = st.columns(2)
+    with col_act1:
+        if st.button("🧹 Clear Chat", use_container_width=True):
+            active_session["messages"] = []
+            active_session["title"] = "New Chat"
+            st.rerun()
+    with col_act2:
+        # Export chat
+        chat_export_json = json.dumps(active_session["messages"], indent=2)
+        st.download_button("📥 Export", data=chat_export_json, file_name=f"chat_{active_session['id']}.json", mime="application/json", use_container_width=True)
 
 
 # ---------------------------------------------------------------------------
-# Main Hero Section
+# Main Interface: Top Header Bar
 # ---------------------------------------------------------------------------
-st.markdown("""
-<div class="hero-header">
-    <div class="hero-title">🔬 PROJECT PHASE 1 — LLM X-RAY</div>
-    <div class="hero-subtitle">Interactive Visualization of Local Large Language Model Inference</div>
-    <div class="pipeline-badge-container">
-        <span class="pipeline-step">1. Input Prompt</span>
-        <span class="pipeline-arrow">➔</span>
-        <span class="pipeline-step">2. Tokenizer & IDs</span>
-        <span class="pipeline-arrow">➔</span>
-        <span class="pipeline-step">3. Input Embeddings</span>
-        <span class="pipeline-arrow">➔</span>
-        <span class="pipeline-step">4. 28 Transformer Layers</span>
-        <span class="pipeline-arrow">➔</span>
-        <span class="pipeline-step">5. Self-Attention</span>
-        <span class="pipeline-arrow">➔</span>
-        <span class="pipeline-step">6. Hidden States</span>
-        <span class="pipeline-arrow">➔</span>
-        <span class="pipeline-step">7. LM Head Logits</span>
-        <span class="pipeline-arrow">➔</span>
-        <span class="pipeline-step">8. Softmax & Generation</span>
+model_short_name = "Qwen2.5-0.5B" if "0.5B" in selected_model else "Qwen2.5-1.5B"
+
+st.markdown(f"""
+<div class="chatgpt-nav-bar">
+    <div class="nav-brand">
+        <span>🤖</span>
+        <span>{active_session['title']}</span>
+        <span class="nav-badge">{model_short_name}</span>
+        <span class="nav-device-badge">⚡ {active_device.upper()}</span>
+    </div>
+    <div style="font-size: 0.8rem; color: #94a3b8;">
+        {len(active_session['messages'])} messages in session
     </div>
 </div>
 """, unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------------------
-# Step 3 - Interactive Prompt Input Interface
+# Helper: Render X-Ray Inspection Panel for a Message Turn
 # ---------------------------------------------------------------------------
-col_prompt, col_preset = st.columns([3, 1])
-
-with col_preset:
-    preset_choice = st.selectbox(
-        "💡 Quick Preset Prompts",
-        options=[
-            "Custom Input...",
-            "Explain Machine Learning",
-            "What is AI?",
-            "The capital of France is",
-            "def quicksort(arr):",
-            "Why is the sky blue?"
-        ]
-    )
-
-default_prompt = "Explain Machine Learning" if preset_choice == "Custom Input..." else (
-    preset_choice if preset_choice != "Custom Input..." else "Explain Machine Learning"
-)
-
-with col_prompt:
-    prompt_input = st.text_input(
-        "Enter your prompt to X-Ray:",
-        value=default_prompt,
-        placeholder="Type any prompt to observe the LLM inner workings..."
-    )
-
-generate_clicked = st.button("⚡ Run LLM X-Ray Forward Pass & Generation", type="primary", use_container_width=True)
-
-# ---------------------------------------------------------------------------
-# Model Loading & Inference Execution
-# ---------------------------------------------------------------------------
-if "xray_data" not in st.session_state:
-    st.session_state.xray_data = None
-if "generation_data" not in st.session_state:
-    st.session_state.generation_data = None
-if "current_prompt" not in st.session_state:
-    st.session_state.current_prompt = ""
-
-if generate_clicked and prompt_input.strip():
-    with st.spinner(f"Loading '{model_choice}' on {active_device.upper()} and running full X-Ray inference..."):
-        try:
-            start_time = time.time()
-            model, tokenizer = get_cached_model(model_choice, active_device)
-            load_time = time.time() - start_time
-
-            # 1. Run full X-Ray Forward pass (captures embeddings, hidden states, attention, logits)
-            fwd_start = time.time()
-            xray_data = run_xray_forward_pass(model, tokenizer, prompt_input, device=active_device)
-            fwd_time = time.time() - fwd_start
-
-            # 2. Run Step-by-Step Auto-regressive Generation
-            gen_start = time.time()
-            generation_data = run_step_by_step_generation(
-                model=model,
-                tokenizer=tokenizer,
-                prompt=prompt_input,
-                max_new_tokens=max_tokens,
-                temperature=temperature,
-                top_p=top_p,
-                top_k=top_k,
-                device=active_device
-            )
-            gen_time = time.time() - gen_start
-
-            xray_data["timing"] = {
-                "load_time": load_time,
-                "forward_time": fwd_time,
-                "generation_time": gen_time
-            }
-
-            st.session_state.xray_data = xray_data
-            st.session_state.generation_data = generation_data
-            st.session_state.current_prompt = prompt_input
-            st.success(f"X-Ray completed in {fwd_time + gen_time:.2f}s!")
-
-        except Exception as e:
-            st.error(f"Inference error: {str(e)}")
-
-
-# ---------------------------------------------------------------------------
-# Step 4 to 10: Multi-Tab Interactive X-Ray Visualizer
-# ---------------------------------------------------------------------------
-if st.session_state.xray_data is not None:
-    xray = st.session_state.xray_data
-    gen = st.session_state.generation_data
-    tokens = xray["tokens"]
-    input_ids = xray["input_ids"]
-    embeddings = xray["input_embeddings"]
-    hidden_states = xray["hidden_states"]
-    attentions = xray["attentions"]
-    top_preds = xray["top_predictions"]
-    num_layers = len(attentions)
+def render_message_xray_panel(xray_data: Dict[str, Any], gen_data: Dict[str, Any], turn_key: str):
+    """Renders the 6 interactive inspection tabs for an assistant message turn."""
+    tokens = xray_data.get("tokens", [])
+    input_ids = xray_data.get("input_ids", [])
+    embeddings = xray_data.get("input_embeddings")
+    hidden_states = xray_data.get("hidden_states", [])
+    attentions = xray_data.get("attentions", [])
+    top_preds = xray_data.get("top_predictions", [])
+    num_layers = len(attentions) if attentions else len(hidden_states) - 1
     num_heads = attentions[0].shape[0] if attentions else 12
 
-    # Overview Metrics Row
-    m1, m2, m3, m4, m5 = st.columns(5)
-    with m1:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-title">Input Tokens</div>
-            <div class="metric-value">{xray['seq_len']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with m2:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-title">Generated Tokens</div>
-            <div class="metric-value">{gen['total_tokens_generated']}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with m3:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-title">Transformer Layers</div>
-            <div class="metric-value">{num_layers}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with m4:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-title">Attention Heads</div>
-            <div class="metric-value">{num_heads}</div>
-        </div>
-        """, unsafe_allow_html=True)
-    with m5:
-        st.markdown(f"""
-        <div class="metric-card">
-            <div class="metric-title">Top Prediction</div>
-            <div class="metric-value" style="color: #34d399;">{top_preds[0]['probability_percent']}%</div>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown(f"""
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+        <span style="font-size: 1.1rem;">🔬</span>
+        <span style="font-weight: 700; color: #818cf8; font-size: 0.95rem;">Deep Neural Inspection (LLM X-Ray)</span>
+        <span style="font-size: 0.75rem; color: #94a3b8;">• {num_layers} Layers • {num_heads} Heads • {xray_data.get('seq_len', 0)} Tokens</span>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown("<br>", unsafe_allow_html=True)
-
-    # Main Tabs
-    tab_chat, tab_token, tab_emb, tab_arch, tab_att, tab_logits, tab_gen = st.tabs([
-        "💬 Chat & Output",
-        "🔤 Step 4: Tokenization & IDs",
-        "🧬 Step 5: Embeddings & PCA",
-        "🏗️ Steps 6 & 8: Transformer & Hidden States",
-        "👁️ Step 7: Attention Visualization",
-        "📊 Step 9: Logits & Probabilities",
-        "⏩ Step 10: Step-by-Step Generation"
+    t_tok, t_emb, t_att, t_hs, t_log, t_gen = st.tabs([
+        "🔤 Tokenization & IDs",
+        "🧬 Embeddings & PCA",
+        "👁️ Multi-Head Attention",
+        "🏗️ Transformer & Hidden States",
+        "📊 Logits & Probabilities",
+        "⏩ Step-by-Step Generation"
     ])
 
-    # -----------------------------------------------------------------------
-    # TAB 1: Chat Interface & Full Generated Output (Step 3)
-    # -----------------------------------------------------------------------
-    with tab_chat:
-        st.markdown("### 💬 Chat Response & Generation Summary")
-        
-        st.markdown("**Prompt:**")
-        st.info(st.session_state.current_prompt)
-        
-        st.markdown("**Model Generated Response:**")
-        st.markdown(f"""
-        <div class="response-card">
-            <b>{gen['full_generated_text']}</b>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-        c_t1, c_t2, c_t3 = st.columns(3)
-        c_t1.metric("Forward Pass Time", f"{xray['timing']['forward_time']:.3f} s")
-        c_t2.metric("Generation Time", f"{xray['timing']['generation_time']:.3f} s")
-        c_t3.metric("Prediction Uncertainty (Entropy)", f"{xray['entropy']:.2f}")
-
-    # -----------------------------------------------------------------------
-    # TAB 2: Tokenization & Token IDs (Step 4)
-    # -----------------------------------------------------------------------
-    with tab_token:
-        st.markdown("### 🔤 Step 4 — Tokenization & Token IDs")
-        st.markdown(
-            "The tokenizer converts raw text into numerical token IDs that the model's neural network can process. "
-            "Each color below represents an individual token boundary."
-        )
-
-        # Get token metadata
+    # 1. Tokenization & Token IDs
+    with t_tok:
         tok_data = []
         for idx, (tid, tok_str) in enumerate(zip(input_ids, tokens)):
             tok_data.append({
@@ -425,185 +490,247 @@ if st.session_state.xray_data is not None:
                 "is_special": False
             })
 
-        st.markdown("#### 🎨 Color-Coded Token Sequence:")
+        st.markdown("##### 🎨 Color-Coded Token Chips Sequence:")
         st.markdown(render_token_chips_html(tok_data), unsafe_allow_html=True)
 
         st.markdown("<br>", unsafe_allow_html=True)
-        t_col1, t_col2 = st.columns([3, 2])
-
-        with t_col1:
-            st.markdown("#### 📋 Detailed Token Breakdown:")
-            df_tokens = pd.DataFrame([
-                {
-                    "Index": d["index"],
-                    "Token String": repr(d["display_token"]),
-                    "Token ID": d["token_id"],
-                    "Byte Length": d["byte_length"]
-                }
-                for d in tok_data
-            ])
-            st.dataframe(df_tokens, use_container_width=True, hide_index=True)
-
-        with t_col2:
-            st.markdown("#### 🔢 Raw Input Token IDs Tensor:")
+        col_t1, col_t2 = st.columns([3, 2])
+        with col_t1:
+            st.markdown("##### 📋 Token Breakdown:")
+            df_toks = pd.DataFrame([{
+                "Index": d["index"],
+                "Token String": repr(d["display_token"]),
+                "Token ID": d["token_id"],
+                "Bytes": d["byte_length"]
+            } for d in tok_data])
+            st.dataframe(df_toks, use_container_width=True, hide_index=True)
+        with col_t2:
+            st.markdown("##### 🔢 Raw Input Token IDs:")
             st.code(str(input_ids), language="python")
-            
-            st.markdown("#### 📊 Tokenizer Statistics:")
-            st.write(f"• **Total Characters:** `{len(st.session_state.current_prompt)}`")
-            st.write(f"• **Total Tokens:** `{len(input_ids)}`")
-            st.write(f"• **Compression Ratio:** `{round(len(st.session_state.current_prompt) / max(len(input_ids), 1), 2)} chars/token`")
-            st.write(f"• **Vocabulary Size:** `{xray['model_meta']['vocab_size']:,}`")
+            st.caption(f"Total Tokens: **{len(input_ids)}** | Vocab: **{xray_data.get('model_meta', {}).get('vocab_size', '151,936')}**")
 
-    # -----------------------------------------------------------------------
-    # TAB 3: Embedding Visualization & PCA (Step 5)
-    # -----------------------------------------------------------------------
-    with tab_emb:
-        st.markdown("### 🧬 Step 5 — Input Embedding Vectors & PCA Projection")
-        st.markdown(
-            "Each token ID is mapped to a continuous high-dimensional vector in embedding space "
-            f"(Dimension = **{embeddings.shape[1]}** for {model_choice})."
-        )
-
-        pca_mode = st.radio("PCA Projection Dimension", ["2D PCA Scatter", "3D PCA Scatter"], horizontal=True)
-        if pca_mode == "2D PCA Scatter":
-            st.plotly_chart(plot_embedding_pca_2d(tokens, embeddings), use_container_width=True)
+    # 2. Embeddings & PCA
+    with t_emb:
+        if embeddings is not None and len(embeddings) > 0:
+            pca_col1, pca_col2 = st.columns([1, 1])
+            with pca_col1:
+                st.markdown("##### 2D PCA Token Projection")
+                st.plotly_chart(plot_embedding_pca_2d(tokens, embeddings), use_container_width=True, key=f"pca2d_{turn_key}")
+            with pca_col2:
+                st.markdown("##### 3D PCA Token Manifold")
+                st.plotly_chart(plot_embedding_pca_3d(tokens, embeddings), use_container_width=True, key=f"pca3d_{turn_key}")
+            st.markdown("##### 🌡️ Input Embedding Vector Heatmap")
+            st.plotly_chart(plot_embedding_heatmap(tokens, embeddings, max_dims=64), use_container_width=True, key=f"emb_heat_{turn_key}")
         else:
-            st.plotly_chart(plot_embedding_pca_3d(tokens, embeddings), use_container_width=True)
+            st.info("Embedding vectors not available for this turn.")
 
-        st.markdown("---")
-        st.markdown("#### 🌡️ Input Embedding Heatmap & Vector Statistics:")
-        e_col1, e_col2 = st.columns([3, 2])
+    # 3. Multi-Head Attention
+    with t_att:
+        if attentions and len(attentions) > 0:
+            c_l, c_h = st.columns(2)
+            with c_l:
+                sel_layer = st.slider("Transformer Layer", min_value=0, max_value=num_layers - 1, value=0, key=f"att_l_{turn_key}")
+            with c_h:
+                sel_head = st.slider("Attention Head", min_value=0, max_value=num_heads - 1, value=0, key=f"att_h_{turn_key}")
 
-        with e_col1:
-            st.plotly_chart(plot_embedding_heatmap(tokens, embeddings, max_dims=64), use_container_width=True)
+            layer_att = attentions[sel_layer]
+            head_att = layer_att[sel_head]
+            st.plotly_chart(plot_attention_heatmap(tokens, head_att, sel_layer, sel_head), use_container_width=True, key=f"att_heat_{turn_key}")
+            st.plotly_chart(plot_attention_head_comparison(tokens, layer_att, target_token_idx=-1), use_container_width=True, key=f"att_comp_{turn_key}")
+        else:
+            st.info("Attention weights not available for this turn.")
 
-        with e_col2:
-            st.markdown("##### 📈 Embedding Vector Statistics:")
-            stats_rows = []
-            for i, (tok, vec) in enumerate(zip(tokens, embeddings)):
-                stats_rows.append({
-                    "Token": repr(tok),
-                    "L2 Norm": round(float(np.linalg.norm(vec)), 3),
-                    "Mean": round(float(np.mean(vec)), 4),
-                    "Std": round(float(np.std(vec)), 4),
-                    "Min": round(float(np.min(vec)), 3),
-                    "Max": round(float(np.max(vec)), 3)
-                })
-            st.dataframe(pd.DataFrame(stats_rows), use_container_width=True, hide_index=True)
+    # 4. Hidden States Evolution
+    with t_hs:
+        if hidden_states and len(hidden_states) > 0:
+            st.plotly_chart(plot_hidden_states_evolution(tokens, hidden_states), use_container_width=True, key=f"hs_evo_{turn_key}")
+            st.plotly_chart(plot_hidden_layer_drift_heatmap(hidden_states), use_container_width=True, key=f"hs_drift_{turn_key}")
+        else:
+            st.info("Hidden state activations not available for this turn.")
 
-    # -----------------------------------------------------------------------
-    # TAB 4: Transformer Architecture & Hidden States (Steps 6 & 8)
-    # -----------------------------------------------------------------------
-    with tab_arch:
-        st.markdown("### 🏗️ Steps 6 & 8 — Transformer Architecture & Hidden States Evolution")
-        st.markdown(
-            f"The input flows through **{num_layers} Transformer Blocks**. In each block, token vectors undergo "
-            "Multi-Head Self-Attention, RMS Normalization, and MLP Feed-Forward expansions."
-        )
+    # 5. Logits & Softmax Probabilities
+    with t_log:
+        if top_preds:
+            st.plotly_chart(plot_logits_distribution(top_preds, top_k=12), use_container_width=True, key=f"logits_{turn_key}")
+            df_preds = pd.DataFrame(top_preds[:12])[["token_id", "display_token", "probability_percent", "logit"]]
+            df_preds.columns = ["Token ID", "Candidate Token", "Probability (%)", "Raw Logit"]
+            st.dataframe(df_preds, use_container_width=True, hide_index=True)
+        else:
+            st.info("Logits not available for this turn.")
 
-        st.plotly_chart(plot_hidden_states_evolution(tokens, hidden_states), use_container_width=True)
-
-        st.markdown("---")
-        h_col1, h_col2 = st.columns([3, 2])
-
-        with h_col1:
-            st.plotly_chart(plot_hidden_layer_drift_heatmap(hidden_states), use_container_width=True)
-
-        with h_col2:
-            st.markdown("#### 🔍 Inspect Specific Layer Hidden State:")
-            selected_inspect_layer = st.selectbox(
-                "Select Transformer Layer to Inspect",
-                options=list(range(len(hidden_states))),
-                format_func=lambda x: "Layer 0 (Embeddings)" if x == 0 else f"Layer {x} (Transformer Block {x})"
-            )
-            hs_layer = hidden_states[selected_inspect_layer]
-            st.write(f"• **Tensor Shape:** `[{hs_layer.shape[0]} tokens, {hs_layer.shape[1]} dimensions]`")
-            st.write(f"• **Mean Magnitude:** `{np.mean(np.linalg.norm(hs_layer, axis=1)):.3f}`")
-            st.write(f"• **Cosine Similarity with Embedding:** `{float(np.dot(np.mean(hidden_states[0], axis=0), np.mean(hs_layer, axis=0)) / (np.linalg.norm(np.mean(hidden_states[0], axis=0)) * np.linalg.norm(np.mean(hs_layer, axis=0)) + 1e-10)):.3f}`")
-
-    # -----------------------------------------------------------------------
-    # TAB 5: Attention Visualization (Step 7)
-    # -----------------------------------------------------------------------
-    with tab_att:
-        st.markdown("### 👁️ Step 7 — Multi-Head Self-Attention Heatmaps")
-        st.markdown(
-            "Self-attention allows each token to attend to other tokens in the prompt sequence to build context-aware representations."
-        )
-
-        c_l, c_h = st.columns(2)
-        with c_l:
-            sel_layer = st.slider("Select Transformer Layer", min_value=0, max_value=num_layers - 1, value=0)
-        with c_h:
-            sel_head = st.slider("Select Attention Head", min_value=0, max_value=num_heads - 1, value=0)
-
-        # Plot specific attention matrix
-        layer_att_matrix = attentions[sel_layer] # [num_heads, seq_len, seq_len]
-        head_matrix = layer_att_matrix[sel_head] # [seq_len, seq_len]
-
-        st.plotly_chart(plot_attention_heatmap(tokens, head_matrix, sel_layer, sel_head), use_container_width=True)
-
-        st.markdown("---")
-        st.markdown("#### 🎯 Multi-Head Attention Focus for Target Token:")
-        st.plotly_chart(plot_attention_head_comparison(tokens, layer_att_matrix, target_token_idx=-1), use_container_width=True)
-
-    # -----------------------------------------------------------------------
-    # TAB 6: Logits & Next-Token Probabilities (Step 9)
-    # -----------------------------------------------------------------------
-    with tab_logits:
-        st.markdown("### 📊 Step 9 — LM Head Logits & Next-Token Softmax Probabilities")
-        st.markdown(
-            "The final layer hidden state passes into the **LM Head** projection to produce unnormalized **Logits** across "
-            "all vocabulary items, which are transformed via **Softmax** into probability distributions."
-        )
-
-        top_k_display = st.slider("Display Top-K Candidates", min_value=5, max_value=25, value=12)
-        st.plotly_chart(plot_logits_distribution(top_preds, top_k=top_k_display), use_container_width=True)
-
-        st.markdown("#### 🏆 Top Candidate Ranking Table:")
-        df_preds = pd.DataFrame(top_preds[:top_k_display])[["token_id", "display_token", "probability_percent", "logit"]]
-        df_preds.columns = ["Token ID", "Candidate Token", "Probability (%)", "Raw Logit"]
-        st.dataframe(df_preds, use_container_width=True, hide_index=True)
-
-    # -----------------------------------------------------------------------
-    # TAB 7: Step-by-Step Auto-Regressive Generation (Step 10)
-    # -----------------------------------------------------------------------
-    with tab_gen:
-        st.markdown("### ⏩ Step 10 — Step-by-Step Auto-Regressive Generation Trace")
-        st.markdown(
-            "Large Language Models generate text one token at a time. In each step, the model samples a new token, "
-            "appends it to the context, and repeats the process."
-        )
-
-        gen_steps = gen["steps"]
+    # 6. Step-by-Step Generation Rollout
+    with t_gen:
+        gen_steps = gen_data.get("steps", [])
         if gen_steps:
-            step_idx = st.slider("Generation Step Replay", min_value=1, max_value=len(gen_steps), value=1)
-            active_step_data = gen_steps[step_idx - 1]
+            step_idx = st.slider("Generation Step Replay", min_value=1, max_value=len(gen_steps), value=1, key=f"gen_step_{turn_key}")
+            active_step = gen_steps[step_idx - 1]
+            gs_c1, gs_c2 = st.columns([2, 3])
+            with gs_c1:
+                st.markdown(f"**Step {active_step['step']}:** Chosen token `{repr(active_step['chosen_token'])}` (ID: {active_step['chosen_token_id']})")
+                st.info(f"**Cumulative Text:** {active_step['cumulative_text']}")
+            with gs_c2:
+                st.plotly_chart(plot_generation_step_candidates(active_step), use_container_width=True, key=f"cand_chart_{turn_key}")
+        else:
+            st.info("Step-by-step trace completed.")
 
-            g_c1, g_c2 = st.columns([2, 3])
-            with g_c1:
-                st.markdown(f"#### 🎯 Step {active_step_data['step']} Details:")
-                st.write(f"• **Chosen Token:** `{repr(active_step_data['chosen_token'])}`")
-                st.write(f"• **Chosen Token ID:** `{active_step_data['chosen_token_id']}`")
-                st.write(f"• **End of Sequence (EOS):** `{active_step_data['is_eos']}`")
-                
-                st.markdown("##### 📝 Cumulative Text at this Step:")
-                st.info(f"{st.session_state.current_prompt} **{active_step_data['cumulative_text']}**")
 
-            with g_c2:
-                st.plotly_chart(plot_generation_step_candidates(active_step_data), use_container_width=True)
+# ---------------------------------------------------------------------------
+# Welcoming Empty State (When no messages in current session)
+# ---------------------------------------------------------------------------
+if len(active_session["messages"]) == 0:
+    st.markdown("""
+    <div class="welcome-container">
+        <div class="welcome-avatar">🤖</div>
+        <div class="welcome-title">How can I help you today?</div>
+        <div class="welcome-subtitle">
+            Chat with local Large Language Models while visually observing internal tokenization,
+            embedding manifolds, 28-layer attention weights, and next-token probability distributions.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-            st.markdown("---")
-            st.markdown("#### 📜 Complete Auto-Regressive Rollout Log:")
-            rollout_rows = []
-            for s in gen_steps:
-                rollout_rows.append({
-                    "Step": s["step"],
-                    "Generated Token": repr(s["chosen_token"]),
-                    "Token ID": s["chosen_token_id"],
-                    "Cumulative Response": s["cumulative_text"]
-                })
-            st.dataframe(pd.DataFrame(rollout_rows), use_container_width=True, hide_index=True)
+    # 4 Interactive Suggestion Cards
+    st.markdown("<div style='font-size: 0.85rem; font-weight: 600; color: #a1a1aa; text-align: center; margin-bottom: 12px;'>✨ SUGGESTED PROMPTS</div>", unsafe_allow_html=True)
+    
+    col_c1, col_c2 = st.columns(2)
+    with col_c1:
+        if st.button("💡 **Explain Concepts**\n\nExplain Machine Learning and Neural Networks in simple terms.", use_container_width=True, key="card_1"):
+            st.session_state.suggested_prompt = "Explain Machine Learning and Neural Networks in simple terms."
+            st.rerun()
+        if st.button("🔬 **Inspect Attention Mechanism**\n\nHow does Transformer Self-Attention compute token interactions?", use_container_width=True, key="card_2"):
+            st.session_state.suggested_prompt = "How does Transformer Self-Attention compute token interactions?"
+            st.rerun()
 
+    with col_c2:
+        if st.button("🐍 **Python Code Generator**\n\nWrite a Python function to sort and filter a dictionary by values.", use_container_width=True, key="card_3"):
+            st.session_state.suggested_prompt = "Write a Python function to sort and filter a dictionary by values."
+            st.rerun()
+        if st.button("🚀 **Brainstorm AI Innovations**\n\nGive me 3 innovative ideas for autonomous AI applications.", use_container_width=True, key="card_4"):
+            st.session_state.suggested_prompt = "Give me 3 innovative ideas for autonomous AI applications."
+            st.rerun()
+
+    st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# Message History Rendering (Multi-Turn Chat)
+# ---------------------------------------------------------------------------
+for idx, msg in enumerate(active_session["messages"]):
+    role = msg.get("role", "user")
+    content = msg.get("content", "")
+    avatar = "👤" if role == "user" else "🤖"
+
+    with st.chat_message(role, avatar=avatar):
+        st.markdown(content)
+
+        # If Assistant Message and X-Ray data exists, provide stats and expander
+        if role == "assistant":
+            timing = msg.get("timing", {})
+            fwd_t = timing.get("forward_time", 0)
+            gen_t = timing.get("generation_time", 0)
+            tok_sec = timing.get("tokens_per_sec", 0)
+            xray_info = msg.get("xray_data")
+            entropy = xray_info.get("entropy", 0) if xray_info else 0
+
+            st.markdown(f"""
+            <div class="stats-pill-container">
+                <span class="stat-pill">⏱️ Gen Time: <b>{gen_t:.2f}s</b></span>
+                <span class="stat-pill">⚡ Speed: <b>{tok_sec} t/s</b></span>
+                <span class="stat-pill">🎯 Entropy: <b>{entropy:.2f}</b></span>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if xray_info and msg.get("generation_data"):
+                with st.expander("🔬 **Inspect Response with LLM X-Ray** (Attention, Embeddings, Logits, Tokens)", expanded=show_xray_inline):
+                    render_message_xray_panel(xray_info, msg.get("generation_data"), turn_key=f"turn_{idx}")
+
+
+# ---------------------------------------------------------------------------
+# Chat Input Bar & Execution Pipeline
+# ---------------------------------------------------------------------------
+# Check if suggested prompt was clicked
+pending_prompt = st.session_state.suggested_prompt
+if pending_prompt:
+    st.session_state.suggested_prompt = None
+    user_input = pending_prompt
 else:
-    # Initial landing screen before generation
-    st.info("👈 Enter a prompt above and click **'⚡ Run LLM X-Ray Forward Pass & Generation'** to observe inside the LLM!")
+    user_input = st.chat_input("Message ChatGPT...")
+
+if user_input and user_input.strip():
+    # 1. Auto-title conversation on first message
+    if len(active_session["messages"]) == 0:
+        clean_title = user_input.strip().replace("\n", " ")
+        if len(clean_title) > 28:
+            clean_title = clean_title[:28] + "..."
+        active_session["title"] = clean_title
+
+    # 2. Append User Message
+    active_session["messages"].append({
+        "role": "user",
+        "content": user_input.strip()
+    })
+
+    # Render User Message immediately
+    with st.chat_message("user", avatar="👤"):
+        st.markdown(user_input.strip())
+
+    # 3. Generate Assistant Response with X-Ray
+    with st.chat_message("assistant", avatar="🤖"):
+        message_placeholder = st.empty()
+        status_placeholder = st.empty()
+
+        status_placeholder.markdown(f"<span style='color: #94a3b8; font-size: 0.85rem;'>Thinking with {model_short_name} on {active_device.upper()}...</span>", unsafe_allow_html=True)
+
+        try:
+            # Load cached model
+            model, tokenizer = get_cached_model(selected_model, active_device)
+
+            # Build conversation history for multi-turn context
+            conversation_history = [
+                {"role": m["role"], "content": m["content"]}
+                for m in active_session["messages"]
+            ]
+
+            # Generate response with X-Ray telemetry
+            gen_result = generate_chat_response_with_xray(
+                model=model,
+                tokenizer=tokenizer,
+                messages=conversation_history,
+                system_prompt=custom_system_prompt,
+                max_new_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
+                device=active_device
+            )
+
+            status_placeholder.empty()
+            
+            response_content = gen_result["response"]
+            message_placeholder.markdown(response_content)
+
+            # Save Assistant Response to session history
+            active_session["messages"].append({
+                "role": "assistant",
+                "content": response_content,
+                "timing": gen_result["timing"],
+                "xray_data": gen_result["xray_data"],
+                "generation_data": gen_result["generation_data"]
+            })
+
+            st.rerun()
+
+        except Exception as e:
+            status_placeholder.empty()
+            st.error(f"Inference error: {str(e)}")
+
+
+# ---------------------------------------------------------------------------
+# Footer
+# ---------------------------------------------------------------------------
+st.markdown("""
+<div class="chatgpt-footer">
+    ChatGPT Interface • Powered by PyTorch & Hugging Face Transformers • Inspect internal activations in real-time
+</div>
+""", unsafe_allow_html=True)
+
