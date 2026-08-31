@@ -220,11 +220,15 @@ async def stream_chat(
                     "page": chunk.page_number,
                     "filename": doc.filename
                 })
-        relevant = compute_tf_idf_similarity(data.message, all_chunks, top_k=3)
+        relevant = compute_tf_idf_similarity(data.message, all_chunks, top_k=4)
+        if not relevant and all_chunks:
+            # Fallback for generic queries like "summarize this document" or "analyse this file"
+            relevant = all_chunks[:4]
+
         if relevant:
-            rag_citations = [{"filename": r["filename"], "page": r["page"], "text": r["text"][:150] + "..."} for r in relevant]
-            context_blocks = [f"Source: {r['filename']} (Page {r['page']}):\n{r['text']}" for r in relevant]
-            rag_context_prompt = "\n\nContext information from uploaded documents:\n" + "\n---\n".join(context_blocks) + "\n\nAnswer using the context when applicable and cite sources."
+            rag_citations = [{"filename": r.get("filename", "Document"), "page": r.get("page", 1), "text": r["text"][:150] + "..."} for r in relevant]
+            context_blocks = [f"Source: {r.get('filename', 'Document')} (Page {r.get('page', 1)}):\n{r['text']}" for r in relevant]
+            rag_context_prompt = "\n\nContext information from uploaded documents:\n" + "\n---\n".join(context_blocks) + "\n\nAnswer using the context above when applicable and cite page sources."
 
     # Build prompt messages history
     messages_history = []

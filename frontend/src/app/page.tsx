@@ -153,7 +153,7 @@ export default function Home() {
     }
   };
 
-  const handleSendMessage = async (text: string) => {
+  const handleSendMessage = async (text: string, attachedDocId?: string) => {
     let currentId = activeConvId;
 
     // Create new conversation if none active
@@ -201,6 +201,7 @@ export default function Home() {
         conversation_id: currentId,
         message: text,
         model: activeModel,
+        document_ids: attachedDocId ? [attachedDocId] : undefined,
       },
       (chunk) => {
         accumulatedContent += chunk;
