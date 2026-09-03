@@ -9,6 +9,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
+      <head>
+        {/* Google Sign-In for Web (GSI) — loads the real Google OAuth SDK */}
+        <script src="https://accounts.google.com/gsi/client" async defer />
+      </head>
       <body className="bg-[#121214] text-[#f3f3f6] min-h-screen flex flex-col antialiased">
         {children}
       </body>

@@ -1,8 +1,7 @@
 {
   "projects": {
-    "default": "your-firebase-project-id",
-    "LLM PROJ": "llm-proj-c7dd4"
+    "default": "llm-proj-c7dd4"
   },
   "targets": {},
   "etags": {}
-}
+}
