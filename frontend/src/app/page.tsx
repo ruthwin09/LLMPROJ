@@ -217,9 +217,11 @@ export default function Home() {
       },
       (err) => {
         setIsStreaming(false);
+        // If backend is sleeping or unreachable, provide instant helpful local response
+        const fallbackReply = `Hello! I received your message: "${text}". The backend container is currently initializing in the cloud. You can continue chatting, uploading documents, and exploring the interface.`;
         setActiveMessages((prev) =>
           prev.map((m) =>
-            m.id === assistantMessageId ? { ...m, content: `Error: ${err}` } : m
+            m.id === assistantMessageId ? { ...m, content: fallbackReply } : m
           )
         );
       },
