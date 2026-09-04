@@ -15,7 +15,7 @@ export default function Home() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [activeMessages, setActiveMessages] = useState<Message[]>([]);
-  const [activeModel, setActiveModel] = useState('llama-3.3-70b-versatile');
+  const [activeModel, setActiveModel] = useState('qwen-2.5-0.5b-local');
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDocDrawerOpen, setIsDocDrawerOpen] = useState(false);
@@ -43,7 +43,7 @@ export default function Home() {
             id: 'guest_local',
             email: 'guest@chatgpt.platform',
             full_name: 'Guest User',
-            preferred_model: 'llama-3.3-70b-versatile',
+            preferred_model: 'qwen-2.5-0.5b-local',
             auth_provider: 'guest',
           };
           setUser(localGuest);
@@ -54,7 +54,7 @@ export default function Home() {
           id: 'guest_local',
           email: 'guest@chatgpt.platform',
           full_name: 'Guest User',
-          preferred_model: 'llama-3.3-70b-versatile',
+          preferred_model: 'qwen-2.5-0.5b-local',
           auth_provider: 'guest',
         };
         setUser(localGuest);
