@@ -7,10 +7,24 @@ import time
 import asyncio
 import threading
 import httpx
-import torch
 from typing import AsyncGenerator, List, Dict, Any, Optional
-from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
 from app.core.config import settings
+
+# Lazy loaded PyTorch & Transformers modules to allow instant lightweight cloud startup
+torch = None
+AutoTokenizer = None
+AutoModelForCausalLM = None
+TextIteratorStreamer = None
+
+def _ensure_transformers():
+    global torch, AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
+    if torch is None:
+        import torch as _torch
+        from transformers import AutoTokenizer as _AutoTokenizer, AutoModelForCausalLM as _AutoModelForCausalLM, TextIteratorStreamer as _TextIteratorStreamer
+        torch = _torch
+        AutoTokenizer = _AutoTokenizer
+        AutoModelForCausalLM = _AutoModelForCausalLM
+        TextIteratorStreamer = _TextIteratorStreamer
 
 # Supported models configuration (Defaulting to keyless local model)
 HOSTED_MODELS = {
@@ -31,6 +45,7 @@ def get_local_model_and_tokenizer(model_id: str = "Qwen/Qwen2.5-0.5B-Instruct"):
     """
     Loads and caches local Hugging Face model and tokenizer.
     """
+    _ensure_transformers()
     with _LOCAL_LOCK:
         if model_id in _LOCAL_MODEL_CACHE:
             return _LOCAL_MODEL_CACHE[model_id]
@@ -78,6 +93,7 @@ async def stream_local_llm_completion(
     Executes 100% keyless local LLM inference using PyTorch and Hugging Face Transformers.
     Streams tokens in real time via Server-Sent Events (SSE).
     """
+    _ensure_transformers()
     model, tokenizer = get_local_model_and_tokenizer(model_id)
     prompt = format_chat_messages(tokenizer, messages, system_prompt)
 
