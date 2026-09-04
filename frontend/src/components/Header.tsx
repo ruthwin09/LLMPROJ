@@ -25,12 +25,12 @@ interface HeaderProps {
 }
 
 const MODELS = [
-  { id: 'qwen-2.5-0.5b-local', name: '⚡ Qwen 2.5 0.5B (Fast & Local)' },
-  { id: 'qwen-2.5-1.5b-local', name: '🧠 Qwen 2.5 1.5B (Deep Reasoning)' },
-  { id: 'llama-3.3-70b-versatile', name: '☁️ Llama 3.3 70B (Groq Cloud)' },
-  { id: 'gpt-4o-mini', name: '☁️ OpenAI GPT-4o Mini' },
-  { id: 'gemini-1.5-flash', name: '☁️ Google Gemini 1.5 Flash' },
-  { id: 'deepseek-r1', name: '☁️ DeepSeek R1' },
+  { id: 'llama-3.3-70b-versatile', name: '⚡ Llama 3.3 70B (Ultra-Fast Groq Cloud ~300 tokens/s)' },
+  { id: 'gemini-1.5-flash', name: '⚡ Google Gemini 1.5 Flash (Fast)' },
+  { id: 'gpt-4o-mini', name: '⚡ OpenAI GPT-4o Mini (Fast)' },
+  { id: 'deepseek-r1', name: '🧠 DeepSeek R1 (Reasoning)' },
+  { id: 'qwen-2.5-0.5b-local', name: '💻 Qwen 2.5 0.5B (Local Device)' },
+  { id: 'qwen-2.5-1.5b-local', name: '💻 Qwen 2.5 1.5B (Local Device)' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({
