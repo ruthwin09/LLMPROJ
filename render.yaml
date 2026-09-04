@@ -1,4 +1,4 @@
-﻿services:
+services:
   - type: web
     name: chatgpt-backend
     runtime: python
@@ -11,7 +11,7 @@
       - key: DATABASE_URL
         value: sqlite:///./chatgpt_platform.db
       - key: GOOGLE_CLIENT_ID
-        value: 373507110593-21imdi81bndguj604ntev9pvt5i6e37t.apps.googleusercontent.com
+        value: 894836364823-p3q8a5mspguceiqjsq0akqtkq48ljjsn.apps.googleusercontent.com
       - key: DEFAULT_LLM_PROVIDER
         value: groq
       - key: DEFAULT_LLM_MODEL
