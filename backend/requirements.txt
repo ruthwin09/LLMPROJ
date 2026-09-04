@@ -16,5 +16,6 @@ tiktoken>=0.6.0
 python-dotenv>=1.0.1
 google-auth>=2.28.0
 requests>=2.31.0
+--extra-index-url https://download.pytorch.org/whl/cpu
 torch
 transformers
