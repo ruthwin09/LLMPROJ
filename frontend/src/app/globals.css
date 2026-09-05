@@ -138,3 +138,12 @@ body {
 .hover-card-pop:hover {
   animation: cardPop 0.18s ease-out forwards;
 }
+
+/* ─── SANA Image Generation Shimmer ─── */
+@keyframes sanaShimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.animate-sana-shimmer {
+  animation: sanaShimmer 2.2s infinite ease-in-out;
+}

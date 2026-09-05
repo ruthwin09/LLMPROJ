@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { Message } from '@/types';
 import { CodeBlock } from './CodeBlock';
+import { SanaImageCard } from './SanaImageCard';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -265,36 +266,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 {children}
               </blockquote>
             ),
-            img: ({ src, alt, ...props }: any) => {
-              return (
-                <div className="my-3 rounded-2xl overflow-hidden border border-white/15 bg-[#18181e] shadow-2xl group max-w-lg">
-                  <div className="relative overflow-hidden bg-black/50">
-                    <img
-                      src={src}
-                      alt={alt || 'SANA 1.6B Generated Image'}
-                      loading="lazy"
-                      className="w-full h-auto object-cover rounded-t-2xl transition-transform duration-300 group-hover:scale-[1.01]"
-                      {...props}
-                    />
-                  </div>
-                  <div className="p-3 bg-[#1e1e24] border-t border-white/10 flex items-center justify-between gap-3 text-xs">
-                    <div className="flex items-center gap-1.5 text-zinc-300 truncate font-medium">
-                      <Palette className="w-3.5 h-3.5 text-[#bb86fc] shrink-0" />
-                      <span className="truncate">{alt || 'SANA 1.6B Synthesis'}</span>
-                    </div>
-                    <a
-                      href={src}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-2.5 py-1 rounded-lg bg-[#bb86fc]/20 hover:bg-[#bb86fc]/30 text-[#d0bcff] font-semibold flex items-center gap-1 transition shrink-0 active:scale-95"
-                      title="Open full resolution in new tab"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      <span>Full HD</span>
-                    </a>
-                  </div>
-                </div>
-              );
+            img: ({ src, alt }: any) => {
+              return <SanaImageCard src={src} alt={alt} />;
             },
           }}
         >
@@ -363,8 +336,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       </button>
                     </div>
                   </div>
-                ) : (
+                ) : msg.content ? (
                   renderMessageContent(msg.content)
+                ) : (
+                  <div className="flex items-center gap-2.5 py-1.5 px-1 text-xs text-[#d0bcff]">
+                    <div className="w-4 h-4 border-2 border-[#bb86fc] border-t-transparent rounded-full animate-spin shrink-0" />
+                    <span className="font-medium animate-pulse">Genie AI is synthesizing response...</span>
+                  </div>
                 )}
 
                 {/* Citations Badges */}
