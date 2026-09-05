@@ -72,17 +72,19 @@ export default function Home() {
           selectConversation(res.data[0].id);
         }
       } else {
-        const defaultConv: Conversation = {
-          id: `conv_${Date.now()}`,
-          title: 'Welcome to ChatGPT',
-          model: 'qwen-2.5-0.5b-local',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          messages: [],
-        };
-        setConversations([defaultConv]);
-        setActiveConvId(defaultConv.id);
-        setActiveMessages([]);
+        setConversations((prev) => {
+          if (prev.length > 0) return prev;
+          const defaultConv: Conversation = {
+            id: `conv_${Date.now()}`,
+            title: 'New Chat',
+            model: activeModel,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            messages: [],
+          };
+          setActiveConvId(defaultConv.id);
+          return [defaultConv];
+        });
       }
     } catch {
       // Fallback
@@ -227,7 +229,24 @@ export default function Home() {
       },
       () => {
         setIsStreaming(false);
-        fetchConversations();
+        setConversations((prev) =>
+          prev.map((c) => {
+            if (c.id === currentId) {
+              const currentMsgs: Message[] = [
+                ...activeMessages,
+                userMessage,
+                {
+                  id: assistantMessageId,
+                  role: 'assistant' as const,
+                  content: accumulatedContent,
+                  created_at: new Date().toISOString(),
+                },
+              ];
+              return { ...c, messages: currentMsgs };
+            }
+            return c;
+          })
+        );
       }
     );
   };
