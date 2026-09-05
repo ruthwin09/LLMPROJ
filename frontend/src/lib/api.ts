@@ -30,6 +30,8 @@ export const streamChatResponse = async (
     model?: string;
     system_prompt?: string;
     document_ids?: string[];
+    document_text?: string;
+    document_name?: string;
     memories?: any[];
     api_key?: string;
   },

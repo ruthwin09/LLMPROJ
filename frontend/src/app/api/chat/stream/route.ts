@@ -5,6 +5,8 @@ import {
   getComparisonResponse,
   getAdvancedProgrammingResponse,
   getContextualResponse,
+  analyzeUploadedDocument,
+  fetchWebSearchSummary,
 } from '@/lib/response_engine';
 
 export const runtime = 'edge';
@@ -307,11 +309,12 @@ if __name__ == "__main__":
 // Query Wikipedia for factual knowledge & deep summaries
 async function fetchWikipediaSummary(query: string): Promise<string | null> {
   const cleanKeyword = query
-    .replace(/^(can you please |please |could you |can you |tell me about |what is |what are |who is |who was |explain |describe |give me details on |give me information on |how does |how do )\s*/i, '')
+    .replace(/^(?:please\s+)?(?:summarize\s+and\s+analyze\s+the\s+key\s+findings\s+in|summarize\s+and\s+analyze|summarize|analyze|can\s+you\s+please|please|could\s+you|can\s+you|tell\s+me\s+about|what\s+is\s+a|what\s+is|what\s+are|who\s+is|who\s+was|explain|describe|give\s+me\s+details\s+on|give\s+me\s+information\s+on|how\s+does|how\s+do)\s+/i, '')
+    .replace(/\.(?:pdf|docx|txt|csv|json|md)\b/gi, '')
     .replace(/[?!.,]+$/g, '')
     .trim();
 
-  if (!cleanKeyword) return null;
+  if (!cleanKeyword || cleanKeyword.length < 2) return null;
 
   try {
     // 1. Search Wikipedia for best article match
@@ -541,7 +544,7 @@ function handleSanaImageGeneration(prompt: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, model, memories = [] } = await req.json();
+    const { message, model, memories = [], document_text, document_name } = await req.json();
     const cleanPrompt = (message || '').trim();
 
     const encoder = new TextEncoder();
@@ -549,10 +552,17 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         let generatedResponse = "";
 
-        // 0. Check memory directives (remember, recall, forget, clear)
-        const memoryAnswer = handleMemoryRequest(cleanPrompt, memories);
-        if (memoryAnswer) {
-          generatedResponse = memoryAnswer;
+        // 0. Check uploaded document content first (PDF, TXT, CSV, JSON, MD RAG)
+        if (document_text && document_text.trim()) {
+          generatedResponse = analyzeUploadedDocument(cleanPrompt, document_text, document_name);
+        }
+
+        // 0.1 Check memory directives (remember, recall, forget, clear)
+        if (!generatedResponse) {
+          const memoryAnswer = handleMemoryRequest(cleanPrompt, memories);
+          if (memoryAnswer) {
+            generatedResponse = memoryAnswer;
+          }
         }
 
         // 0.5. Check SANA 1.6B Image Generation
@@ -594,7 +604,15 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // 3. Professional contextual fallback (replaces all hardcoded templates)
+        // 2.5 Live Web Search fallback (DuckDuckGo real-world intelligence for topics not on Wikipedia)
+        if (!generatedResponse) {
+          const webAnswer = await fetchWebSearchSummary(cleanPrompt);
+          if (webAnswer) {
+            generatedResponse = webAnswer;
+          }
+        }
+
+        // 3. Professional contextual fallback (domain-aware analysis)
         if (!generatedResponse) {
           generatedResponse = getContextualResponse(cleanPrompt);
         }

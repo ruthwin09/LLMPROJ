@@ -186,7 +186,12 @@ export default function Home() {
     }
   };
 
-  const handleSendMessage = async (text: string, attachedDocId?: string) => {
+  const handleSendMessage = async (
+    text: string,
+    attachedDocId?: string,
+    attachedDocText?: string,
+    attachedDocName?: string
+  ) => {
     let currentId = activeConvId;
 
     if (!currentId) {
@@ -251,6 +256,8 @@ export default function Home() {
         message: text,
         model: activeModel,
         document_ids: attachedDocId ? [attachedDocId] : undefined,
+        document_text: attachedDocText,
+        document_name: attachedDocName,
         memories: currentMemories,
       },
       (chunk) => {

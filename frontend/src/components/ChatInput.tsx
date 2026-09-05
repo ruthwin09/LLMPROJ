@@ -20,7 +20,7 @@ import { apiClient } from '@/lib/api';
 import { getPromptSuggestions, PromptSuggestion } from '@/lib/suggestions';
 
 interface ChatInputProps {
-  onSend: (message: string, attachedDocId?: string) => void;
+  onSend: (message: string, attachedDocId?: string, attachedDocText?: string, attachedDocName?: string) => void;
   onOpenUpload: () => void;
   isStreaming: boolean;
   onStopStreaming?: () => void;
@@ -111,9 +111,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
     setShowSuggestions(false);
     let docId: string | undefined = undefined;
+    let docText: string | undefined = undefined;
+    let docName: string | undefined = undefined;
 
     if (attachedFile) {
       setUploadingFile(true);
+      docName = attachedFile.name;
       const formData = new FormData();
       formData.append('file', attachedFile);
       try {
@@ -121,6 +124,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         docId = res.data.id;
+        docText = res.data.text;
       } catch (err: any) {
         console.error('File upload error:', err);
       } finally {
@@ -131,7 +135,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
 
     const messageText = text.trim() || (attachedFile ? `Analyze ${attachedFile.name}` : '');
-    onSend(messageText, docId);
+    onSend(messageText, docId, docText, docName);
     setText('');
     setManuallyDismissed(false);
     if (textareaRef.current) {
