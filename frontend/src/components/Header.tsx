@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import {
   Menu,
-  Bot,
   Bell,
   Share2,
   Search,
@@ -91,11 +91,22 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </button>
 
-        <div className="flex items-center gap-2 cursor-pointer" onClick={onNewChat}>
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#7c4dff] to-[#bb86fc] flex items-center justify-center shadow-md shadow-purple-950/60">
-            <Bot className="w-4 h-4 text-[#121214]" />
+
+        <div className="flex items-center gap-2.5 cursor-pointer group" onClick={onNewChat}>
+          <div className="relative w-8 h-8 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full bg-[#7c4dff]/25 blur-[6px] group-hover:bg-[#bb86fc]/40 transition" />
+            <Image
+              src="/genie-logo.png"
+              alt="Genie AI"
+              width={32}
+              height={32}
+              className="relative object-contain w-8 h-8 drop-shadow-[0_0_8px_rgba(187,134,252,0.45)] group-hover:scale-105 transition-transform"
+              priority
+            />
           </div>
-          <span className="text-base font-bold text-white tracking-tight">ChatGPT</span>
+          <span className="text-base font-bold text-white tracking-tight">
+            Genie <span className="text-[#bb86fc] font-light">AI</span>
+          </span>
         </div>
 
         {/* Model Selector Pill */}
@@ -137,7 +148,7 @@ export const Header: React.FC<HeaderProps> = ({
         <button
           onClick={() => {
             navigator.clipboard.writeText(window.location.href);
-            alert('ChatGPT link copied to clipboard!');
+            alert('Genie AI link copied to clipboard!');
           }}
           className="p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/10 transition hidden sm:flex items-center justify-center"
           title="Share"

@@ -92,3 +92,49 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ─── Splash Screen Animations ─── */
+@keyframes splashLogoEnter {
+  0%   { opacity: 0; transform: scale(0.72) translateY(24px); }
+  60%  { opacity: 1; transform: scale(1.04) translateY(-3px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.splash-logo-enter {
+  animation: splashLogoEnter 0.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes pulseRing {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 0.85; transform: scale(1.12); }
+}
+.animate-pulse-ring {
+  animation: pulseRing 1.6s ease-in-out infinite;
+}
+
+@keyframes splashDot {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.8); }
+  40%            { opacity: 1;    transform: scale(1.2); }
+}
+.splash-dot {
+  display: inline-block;
+  animation: splashDot 1.2s ease-in-out infinite;
+}
+
+/* ─── App Content Reveal ─── */
+@keyframes appReveal {
+  from { opacity: 0; transform: scale(0.985) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.animate-app-reveal {
+  animation: appReveal 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Starter Card hover pop ─── */
+@keyframes cardPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.03); }
+  100% { transform: scale(1.02); }
+}
+.hover-card-pop:hover {
+  animation: cardPop 0.18s ease-out forwards;
+}

@@ -74,7 +74,7 @@ export const MemoryModal: React.FC<MemoryModalProps> = ({
                 </span>
               </h2>
               <p className="text-[11px] text-zinc-400">
-                ChatGPT remembers details you tell it across all conversations
+                Genie AI remembers details you tell it across all conversations
               </p>
             </div>
           </div>
@@ -93,7 +93,7 @@ export const MemoryModal: React.FC<MemoryModalProps> = ({
           <form onSubmit={handleAdd} className="space-y-2.5 bg-[#18181e] p-3.5 rounded-2xl border border-white/10">
             <label className="text-xs font-semibold text-zinc-300 flex items-center gap-1.5">
               <Plus className="w-3.5 h-3.5 text-[#bb86fc]" />
-              <span>Add something for ChatGPT to remember</span>
+              <span>Add something for Genie AI to remember</span>
             </label>
 
             <div className="flex gap-2">
@@ -137,7 +137,7 @@ export const MemoryModal: React.FC<MemoryModalProps> = ({
                 <Brain className="w-8 h-8 text-zinc-600 mx-auto" />
                 <p className="text-xs text-zinc-400 font-medium">No memories saved yet.</p>
                 <p className="text-[11px] text-zinc-500 max-w-xs mx-auto">
-                  Say <code className="text-[#bb86fc] bg-white/5 px-1 rounded">&quot;Remember that my name is...&quot;</code> in any chat to teach ChatGPT!
+                  Say <code className="text-[#bb86fc] bg-white/5 px-1 rounded">&quot;Remember that my name is...&quot;</code> in any chat to teach Genie AI!
                 </p>
               </div>
             ) : (

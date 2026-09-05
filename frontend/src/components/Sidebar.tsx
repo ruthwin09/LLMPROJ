@@ -117,13 +117,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Top Header + New Chat FAB + Minimize Button */}
           <div className="p-4 border-b border-white/10 space-y-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#7c4dff] to-[#bb86fc] flex items-center justify-center shadow-md">
-                  <Bot className="w-4 h-4 text-[#121214]" />
+              <div className="flex items-center gap-2.5">
+                <div className="relative w-8 h-8 flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full bg-[#7c4dff]/20 blur-[6px]" />
+                  <img
+                    src="/genie-logo.png"
+                    alt="Genie AI"
+                    className="relative w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(187,134,252,0.4)]"
+                  />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-white tracking-tight">ChatGPT</h2>
-                  <p className="text-[10px] text-zinc-400">AI Platform</p>
+                  <h2 className="text-sm font-bold text-white tracking-tight">Genie <span className="text-[#bb86fc] font-light">AI</span></h2>
+                  <p className="text-[10px] text-zinc-400">Your AI Assistant</p>
                 </div>
               </div>
 
@@ -309,7 +314,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             )}
             <span className="text-xs font-semibold text-white truncate max-w-[130px]">
-              {user?.full_name || 'ChatGPT User'}
+              {user?.full_name || 'Genie AI User'}
             </span>
           </div>
           <Settings className="w-4 h-4 text-zinc-400 hover:text-[#bb86fc] transition" />

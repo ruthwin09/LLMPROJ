@@ -2,8 +2,8 @@ import './globals.css';
 import React from 'react';
 
 export const metadata = {
-  title: 'ChatGPT — AI Platform',
-  description: 'ChatGPT AI web platform with local LLMs, document RAG analysis, and multi-turn conversations.',
+  title: 'Genie AI — Your Intelligent Assistant',
+  description: 'Genie AI — Chat with local & cloud LLMs, analyze documents with RAG, and store long-term memories.',
 };
 
 export const viewport = {

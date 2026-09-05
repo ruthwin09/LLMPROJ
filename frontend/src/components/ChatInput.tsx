@@ -159,7 +159,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message ChatGPT..."
+          placeholder="Message Genie AI..."
           rows={1}
           className="w-full bg-transparent text-white placeholder-zinc-500 text-xs sm:text-sm px-2 py-1 outline-none resize-none max-h-36"
         />

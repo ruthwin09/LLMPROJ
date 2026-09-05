@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
+
 import {
   Bot,
   User as UserIcon,
@@ -57,25 +59,34 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   if (messages.length === 0) {
     return (
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col items-center justify-start sm:justify-center p-4 sm:p-6 text-center max-w-3xl mx-auto w-full select-none animate-fade-in">
-        {/* Soft Purple Avatar Badge */}
-        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-[#7c4dff] to-[#bb86fc] p-0.5 shadow-2xl shadow-purple-950/50 mb-3 sm:mb-4 shrink-0">
-          <div className="w-full h-full bg-[#18181e] rounded-[18px] sm:rounded-[22px] flex items-center justify-center border border-[#bb86fc]/40">
-            <Bot className="w-6 h-6 sm:w-8 sm:h-8 text-[#d0bcff]" />
+        {/* Genie AI Logo — borderless on dark bg */}
+        <div className="relative mb-4 sm:mb-5 shrink-0">
+          {/* Ambient radial glow */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-[#7c4dff]/30 to-[#bb86fc]/20 blur-[32px] scale-125 pointer-events-none" />
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center">
+            <Image
+              src="/genie-logo.png"
+              alt="Genie AI"
+              width={112}
+              height={112}
+              className="object-contain w-full h-full drop-shadow-[0_0_24px_rgba(187,134,252,0.45)] hover:scale-105 transition-transform duration-300"
+              priority
+            />
           </div>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-1.5 shrink-0">
-          How can I help you today?
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight mb-0.5 shrink-0">
+          Hi, I&apos;m <span className="text-[#bb86fc]">Genie AI</span>
         </h1>
         <p className="text-xs sm:text-sm text-zinc-400 mb-4 sm:mb-6 max-w-lg leading-relaxed shrink-0">
-          Chat with local & cloud models, summarize documents with RAG, and write clean code with instant streaming responses.
+          Chat with local &amp; cloud models, summarize documents with RAG, and write clean code with instant streaming responses.
         </p>
 
-        {/* Status Chips from Reference Image (Enabled, Pressed, Selected) */}
+        {/* Status Chips */}
         <div className="flex items-center justify-center gap-2 mb-4 sm:mb-6 flex-wrap shrink-0">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#282834] text-xs font-semibold text-zinc-200 border border-white/10">
             <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>Local & Cloud LLMs</span>
+            <span>Local &amp; Cloud LLMs</span>
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#bb86fc]/20 text-xs font-semibold text-[#d0bcff] border border-[#bb86fc]/40">
             <CheckCircle2 className="w-3.5 h-3.5 text-[#bb86fc]" />
@@ -102,7 +113,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <span className="group-hover:text-[#bb86fc] transition">Teach Memory</span>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Tell ChatGPT your name and preferences to remember across all chats.
+              Tell Genie AI your name and preferences to remember across all chats.
             </p>
           </button>
 
@@ -119,7 +130,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <span className="group-hover:text-[#bb86fc] transition">Recall My Memories</span>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Ask ChatGPT to list everything currently stored in your profile memory.
+              Ask Genie AI to list everything currently stored in your profile memory.
             </p>
           </button>
 
@@ -268,8 +279,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             className={`flex gap-3.5 ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`}
           >
             {!isUser && (
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[#7c4dff] to-[#bb86fc] flex items-center justify-center shrink-0 mt-1 shadow-md">
-                <Bot className="w-4 h-4 text-[#121214]" />
+              <div className="relative w-8 h-8 flex items-center justify-center shrink-0 mt-1">
+                <div className="absolute inset-0 rounded-full bg-[#7c4dff]/20 blur-[4px]" />
+                <Image
+                  src="/genie-logo.png"
+                  alt="Genie AI"
+                  width={28}
+                  height={28}
+                  className="relative object-contain w-7 h-7 drop-shadow-[0_0_6px_rgba(187,134,252,0.4)]"
+                />
               </div>
             )}
 

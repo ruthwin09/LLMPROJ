@@ -7,6 +7,7 @@ import { ChatWindow } from '@/components/ChatWindow';
 import { ChatInput } from '@/components/ChatInput';
 import { DocumentDrawer } from '@/components/DocumentDrawer';
 import { MemoryModal } from '@/components/MemoryModal';
+import { SplashScreen } from '@/components/SplashScreen';
 import { getStoredUser } from '@/lib/auth';
 import { apiClient, streamChatResponse } from '@/lib/api';
 import { Conversation, Message, User, UserMemory } from '@/types';
@@ -26,6 +27,7 @@ export default function Home() {
   const [activeModel, setActiveModel] = useState('qwen-2.5-0.5b-local');
   const [memories, setMemories] = useState<UserMemory[]>([]);
   const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDocDrawerOpen, setIsDocDrawerOpen] = useState(false);
@@ -323,7 +325,11 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-[100dvh] min-h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-[#121214]">
+    <React.Fragment>
+      {/* Splash Screen — shown on first load */}
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+
+      <div className={`flex h-[100dvh] min-h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-[#121214] ${!showSplash ? 'animate-app-reveal' : 'opacity-0'}`}>
       {/* Sidebar */}
       <Sidebar
         conversations={conversations}
@@ -384,5 +390,6 @@ export default function Home() {
         />
       </div>
     </div>
+    </React.Fragment>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import { Bot, User, Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { setStoredAuth } from '@/lib/auth';
@@ -42,10 +43,18 @@ export default function RegisterPage() {
         <div className="bg-[#1e1e24] border border-white/10 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl relative overflow-hidden">
           {/* Header */}
           <div className="text-center space-y-2">
-            <div className="inline-flex p-3 rounded-2xl bg-gradient-to-tr from-[#7c4dff] to-[#bb86fc] mb-1 shadow-lg shadow-purple-950/50">
-              <Bot className="w-7 h-7 text-[#121214]" />
+            <div className="relative inline-flex items-center justify-center w-16 h-16 mb-1">
+              <div className="absolute inset-0 rounded-full bg-[#7c4dff]/30 blur-[14px]" />
+              <Image
+                src="/genie-logo.png"
+                alt="Genie AI"
+                width={56}
+                height={56}
+                className="relative object-contain w-14 h-14 drop-shadow-[0_0_12px_rgba(187,134,252,0.5)]"
+                priority
+              />
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">Create ChatGPT Account</h1>
+            <h1 className="text-2xl font-bold text-white tracking-tight">Create Genie <span className="text-[#bb86fc] font-light">AI</span> Account</h1>
             <p className="text-xs text-zinc-400">Get started with your AI assistant in seconds</p>
           </div>
 
