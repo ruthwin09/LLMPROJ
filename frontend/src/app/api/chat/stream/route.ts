@@ -1,39 +1,13 @@
 import { NextRequest } from 'next/server';
+import {
+  formatKnowledgeResponse,
+  getWritingResponse,
+  getComparisonResponse,
+  getAdvancedProgrammingResponse,
+  getContextualResponse,
+} from '@/lib/response_engine';
 
 export const runtime = 'edge';
-
-// Format Wikipedia extract into professional ChatGPT-style structure with emojis and sections
-function formatKnowledgeResponse(title: string, extract: string): string {
-  // Split paragraphs
-  const rawParagraphs = extract.split('\n').map(p => p.trim()).filter(Boolean);
-  const mainSummary = rawParagraphs[0] || extract;
-  const secondary = rawParagraphs.slice(1).join('\n\n');
-
-  // Generate relevant emoji based on title / content
-  let emoji = '💡';
-  const t = title.toLowerCase();
-  if (t.includes('intelligence') || t.includes('ai') || t.includes('robot') || t.includes('computer')) emoji = '🤖';
-  else if (t.includes('python') || t.includes('code') || t.includes('program') || t.includes('software')) emoji = '💻';
-  else if (t.includes('biology') || t.includes('plant') || t.includes('photo') || t.includes('cell')) emoji = '🌱';
-  else if (t.includes('physics') || t.includes('quantum') || t.includes('space') || t.includes('black hole') || t.includes('star')) emoji = '🌌';
-  else if (t.includes('math') || t.includes('algorithm') || t.includes('data')) emoji = '📊';
-  else if (t.includes('musk') || t.includes('einstein') || t.includes('person') || t.includes('who is')) emoji = '👤';
-  else if (t.includes('history') || t.includes('war') || t.includes('ancient')) emoji = '📜';
-
-  return `### ${emoji} ${title}
-
-${mainSummary}
-
-${secondary ? `### 🔍 In-Depth Details\n${secondary}\n` : ''}
----
-
-### 📌 Key Takeaways:
-- **Core Concept**: Represents fundamental developments and real-world mechanisms in its discipline.
-- **Impact & Reach**: Powers modern scientific, technological, or sociocultural advancements worldwide.
-- **Practical Application**: Widely utilized by industry professionals, researchers, and developers.
-
-💬 *Feel free to ask follow-up questions, request specific code examples, or dive deeper into any subtopic!*`;
-}
 
 // Curated code solutions for common algorithmic / programming requests
 function getProgrammingResponse(prompt: string): string | null {
@@ -605,6 +579,24 @@ export async function POST(req: NextRequest) {
           }
         }
 
+        // 1.5 Professional writing (emails, cover letters, resignation, resume)
+        if (!generatedResponse) {
+          const writingAnswer = getWritingResponse(cleanPrompt);
+          if (writingAnswer) generatedResponse = writingAnswer;
+        }
+
+        // 1.6 Comparison / "X vs Y" structured tables
+        if (!generatedResponse) {
+          const comparisonAnswer = getComparisonResponse(cleanPrompt);
+          if (comparisonAnswer) generatedResponse = comparisonAnswer;
+        }
+
+        // 1.7 Advanced programming (React hooks, FastAPI, SQL Joins)
+        if (!generatedResponse) {
+          const advancedCode = getAdvancedProgrammingResponse(cleanPrompt);
+          if (advancedCode) generatedResponse = advancedCode;
+        }
+
         // 2. Check factual knowledge via Wikipedia Search & Extract
         if (!generatedResponse) {
           const wikiAnswer = await fetchWikipediaSummary(cleanPrompt);
@@ -613,25 +605,16 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // 3. Conversational and general responses fallback
+        // 3. Professional contextual fallback (replaces all hardcoded templates)
+        if (!generatedResponse) {
+          generatedResponse = getContextualResponse(cleanPrompt);
+        }
+
+        // ─── Legacy placeholder (kept for safety — should never be reached) ───
         if (!generatedResponse) {
           const lower = cleanPrompt.toLowerCase();
 
-          if (lower.includes('who are you') || lower.includes('what are you') || lower.includes('your name')) {
-            generatedResponse = `### 🤖 Hello! I am Genie AI.
-
-I am your advanced intelligent assistant running 24/7 on the **Vercel Global Edge Network**. 
-
----
-
-### 🚀 What I Can Do:
-- 💻 **Write & Debug Code:** Python, JavaScript, TypeScript, SQL, algorithms, and full-stack development.
-- 📚 **Explain Concepts:** Science, technology, mathematics, history, and business.
-- ⚡ **Problem Solving:** Data structures, architectural design, and optimization.
-- ✍️ **Writing & Summarization:** Creative writing, documentation, and research analysis.
-
-💡 *What project or question would you like to explore today?*`;
-          } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
+          if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey')) {
             generatedResponse = `### 👋 Hello there!
 
 Welcome! I am online, running 24/7, and ready to assist you. 
