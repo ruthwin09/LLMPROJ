@@ -573,7 +573,7 @@ export async function POST(req: NextRequest) {
 
         // 0. Check Florence-2 Vision Analysis (Camera photo snapshot or explicit vision model)
         if (effectiveImage || model === 'florence-2' || cleanPrompt.toLowerCase().startsWith('/vision')) {
-          generatedResponse = analyzeWithFlorence2(
+          generatedResponse = await analyzeWithFlorence2(
             cleanPrompt,
             effectiveImage,
             vision_task || '<MORE_DETAILED_CAPTION>'

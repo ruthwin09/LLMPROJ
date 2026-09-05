@@ -11,7 +11,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Image data is required.' }, { status: 400 });
     }
 
-    const analysis = analyzeWithFlorence2(prompt, image, task);
+    // analyzeWithFlorence2 is now async — it calls the real Gradio API
+    const analysis = await analyzeWithFlorence2(prompt, image, task);
 
     return NextResponse.json({
       model: 'microsoft/Florence-2-large',
