@@ -46,7 +46,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   // Faster-Whisper Voice-to-Text State
   const [isRecording, setIsRecording] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [liveTranscript, setLiveTranscript] = useState('');
   const [isTranscribing, setIsTranscribing] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,10 +56,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const streamRef = useRef<MediaStream | null>(null);
   const recognitionRef = useRef<any>(null);
   const timerRef = useRef<any>(null);
+  const baseTextRef = useRef<string>('');
+  const isRecordingRef = useRef<boolean>(false);
 
   // Cleanup recording on unmount
   useEffect(() => {
     return () => {
+      isRecordingRef.current = false;
       if (timerRef.current) clearInterval(timerRef.current);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((t) => t.stop());
@@ -75,7 +77,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const startVoiceRecording = async () => {
     try {
-      setLiveTranscript('');
+      baseTextRef.current = text;
+      isRecordingRef.current = true;
       setRecordingSeconds(0);
       setIsRecording(true);
 
@@ -83,7 +86,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         setRecordingSeconds((prev) => prev + 1);
       }, 1000);
 
-      // 1. Client-side Real-time Speech Recognition
+      // 1. Client-side Real-time Speech Recognition (Auto-types directly as user speaks)
       const SpeechRecognition =
         (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
@@ -94,24 +97,38 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         recognition.lang = 'en-US';
 
         recognition.onresult = (event: any) => {
-          let transcript = '';
+          let sessionTranscript = '';
           for (let i = 0; i < event.results.length; i++) {
-            transcript += event.results[i][0].transcript;
+            sessionTranscript += event.results[i][0].transcript;
           }
-          if (transcript.trim()) {
-            setLiveTranscript(transcript.trim());
+          const speech = sessionTranscript.trim();
+          if (speech) {
+            const prefix = baseTextRef.current ? `${baseTextRef.current.trim()} ` : '';
+            setText(`${prefix}${speech}`);
+            if (textareaRef.current) {
+              textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+            }
           }
         };
 
         recognition.onerror = (err: any) => {
-          console.warn('Faster-Whisper speech recognition event:', err);
+          console.warn('Faster-Whisper speech recognition warning:', err);
+        };
+
+        recognition.onend = () => {
+          // Keep recognition alive while recording is active
+          if (isRecordingRef.current) {
+            try {
+              recognition.start();
+            } catch {}
+          }
         };
 
         recognition.start();
         recognitionRef.current = recognition;
       }
 
-      // 2. Audio Stream Capture for Faster-Whisper Serverless API
+      // 2. Audio Stream Capture for Faster-Whisper Serverless API Fallback
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
@@ -125,15 +142,24 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         mediaRecorder.start(250);
         mediaRecorderRef.current = mediaRecorder;
       }
+
+      // Auto-focus textarea so user can see their words typing in
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
     } catch (err: any) {
       console.error('Microphone error:', err);
+      isRecordingRef.current = false;
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
       alert('Microphone permission is required to use Faster-Whisper Voice-to-Text.');
     }
   };
 
-  const stopVoiceRecording = async (commit = true) => {
+  const stopVoiceRecording = async () => {
+    isRecordingRef.current = false;
+    setIsRecording(false);
+
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
@@ -155,42 +181,33 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       mediaRecorderRef.current.stop();
     }
 
-    setIsRecording(false);
-
-    if (commit) {
-      const captured = liveTranscript.trim();
-      if (captured) {
-        setText((prev) => (prev ? `${prev} ${captured}` : captured));
-        if (textareaRef.current) {
-          textareaRef.current.focus();
-        }
-      }
-
-      if (audioChunksRef.current.length > 0) {
-        setIsTranscribing(true);
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const formData = new FormData();
-        formData.append('file', audioBlob, 'recording.webm');
-        formData.append('transcript', captured);
-
-        try {
-          const res = await fetch('/api/audio/transcribe', {
-            method: 'POST',
-            body: formData,
-          });
-          const data = await res.json();
-          if (data.text && !captured) {
-            setText(data.text);
-          }
-        } catch {
-          // Keep captured transcript
-        } finally {
-          setIsTranscribing(false);
-        }
-      }
+    if (textareaRef.current) {
+      textareaRef.current.focus();
     }
 
-    setLiveTranscript('');
+    // Serverless Faster-Whisper Fallback: if browser SpeechRecognition produced nothing but audio was captured
+    if (audioChunksRef.current.length > 0 && !text.trim()) {
+      setIsTranscribing(true);
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      const formData = new FormData();
+      formData.append('file', audioBlob, 'recording.webm');
+
+      try {
+        const res = await fetch('/api/audio/transcribe', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.text) {
+          const prefix = baseTextRef.current ? `${baseTextRef.current.trim()} ` : '';
+          setText(`${prefix}${data.text}`);
+        }
+      } catch {
+        // Handled silently
+      } finally {
+        setIsTranscribing(false);
+      }
+    }
   };
 
   useEffect(() => {
@@ -387,7 +404,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           type="button"
           onClick={() => {
             if (isRecording) {
-              stopVoiceRecording(true);
+              stopVoiceRecording();
             } else {
               startVoiceRecording();
             }
@@ -399,7 +416,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           }`}
         >
           <Mic className={`w-3.5 h-3.5 ${isRecording ? 'text-rose-400' : 'text-[#bb86fc]'}`} />
-          <span>{isRecording ? 'Listening (Whisper)...' : 'Faster-Whisper Voice'}</span>
+          <span>{isRecording ? 'Listening & Typing...' : 'Faster-Whisper Voice'}</span>
         </button>
       </div>
 
@@ -488,127 +505,130 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </div>
       )}
 
-      {/* ─── FASTER-WHISPER ACTIVE RECORDING OVERLAY ─── */}
-      {isRecording ? (
-        <div className="relative flex items-center justify-between bg-[#161622] border border-[#bb86fc]/50 rounded-2xl px-3.5 py-2.5 shadow-2xl shadow-purple-950/60 animate-fade-in">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {/* Pulsing indicator */}
+      {/* ─── LIVE FASTER-WHISPER RECORDING STATUS BANNER ─── */}
+      {isRecording && (
+        <div className="mb-2 flex items-center justify-between bg-[#161622]/95 border border-[#bb86fc]/40 backdrop-blur-md rounded-xl px-3 py-1.5 text-xs text-white shadow-lg animate-fade-in">
+          <div className="flex items-center gap-2.5 min-w-0">
             <div className="relative flex items-center justify-center shrink-0">
-              <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping absolute" />
-              <span className="w-3 h-3 rounded-full bg-rose-500 relative" />
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping absolute" />
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 relative" />
             </div>
-
-            {/* Faster-Whisper Soundwave Animation */}
-            <div className="flex items-center gap-1 shrink-0 px-2 py-1 bg-black/40 rounded-lg border border-white/10">
-              <span className="w-1 h-3 bg-[#bb86fc] rounded-full animate-pulse" />
-              <span className="w-1 h-5 bg-[#d0bcff] rounded-full animate-pulse delay-75" />
-              <span className="w-1 h-2.5 bg-[#bb86fc] rounded-full animate-pulse delay-150" />
-              <span className="w-1 h-6 bg-[#9965f4] rounded-full animate-pulse delay-100" />
-              <span className="w-1 h-4 bg-[#d0bcff] rounded-full animate-pulse delay-200" />
-            </div>
-
-            {/* Status & Live Transcript */}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold text-[#bb86fc] flex items-center gap-1">
-                  <Mic className="w-3 h-3" /> Faster-Whisper
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-1.5 py-0.5 rounded">
-                  {Math.floor(recordingSeconds / 60)
-                    .toString()
-                    .padStart(2, '0')}
-                  :{(recordingSeconds % 60).toString().padStart(2, '0')}
-                </span>
-              </div>
-              <p className="text-xs text-zinc-200 truncate mt-0.5 font-medium italic">
-                {liveTranscript || 'Listening... Speak clearly into your microphone'}
-              </p>
-            </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex items-center gap-1.5 shrink-0 ml-2">
-            <button
-              type="button"
-              onClick={() => stopVoiceRecording(false)}
-              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-rose-400 transition"
-              title="Cancel recording"
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => stopVoiceRecording(true)}
-              className="px-3 py-1.5 rounded-xl bg-[#bb86fc] hover:bg-[#a36dfc] text-[#121214] font-semibold text-xs flex items-center gap-1.5 shadow-md shadow-purple-900/40 transition"
-              title="Insert transcription"
-            >
-              <Check className="w-3.5 h-3.5 stroke-[3]" />
-              <span>Done</span>
-            </button>
-          </div>
-        </div>
-      ) : (
-        /* Input Surface with Floating Purple Send Button */
-        <form
-          onSubmit={handleSubmit}
-          className="relative flex items-center bg-[#1e1e24] border border-white/10 focus-within:border-[#bb86fc]/60 rounded-2xl px-3 py-2 shadow-2xl transition duration-150"
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.docx,.txt,.csv,.json,.md"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => {
-              setText(e.target.value);
-              setManuallyDismissed(false);
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="Message Genie AI..."
-            rows={1}
-            className="w-full bg-transparent text-white placeholder-zinc-500 text-xs sm:text-sm px-2 py-1 outline-none resize-none max-h-36"
-          />
-
-          {uploadingFile ? (
-            <div className="p-2 text-[#bb86fc] animate-spin shrink-0">
-              <Loader2 className="w-4 h-4" />
-            </div>
-          ) : isStreaming ? (
-            <button
-              type="button"
-              onClick={onStopStreaming}
-              className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition shrink-0"
-              title="Stop generating"
-            >
-              <Square className="w-3.5 h-3.5 fill-white" />
-            </button>
-          ) : (
             <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={startVoiceRecording}
-                className="w-9 h-9 rounded-full bg-[#252530] hover:bg-[#323242] border border-white/10 text-zinc-300 hover:text-[#bb86fc] transition flex items-center justify-center cursor-pointer shadow-sm group"
-                title="Faster-Whisper Voice-to-Text"
-              >
-                <Mic className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              </button>
-              <button
-                type="submit"
-                disabled={!text.trim() && !attachedFile}
-                className="w-9 h-9 fab-purple disabled:opacity-40 disabled:hover:bg-[#bb86fc] rounded-full transition flex items-center justify-center cursor-pointer shadow-md shadow-purple-950/40"
-                title="Send"
-              >
-                <Send className="w-4 h-4 text-[#121214]" />
-              </button>
+              <span className="font-semibold text-[#bb86fc] flex items-center gap-1">
+                <Mic className="w-3.5 h-3.5" /> Faster-Whisper
+              </span>
+              <span className="text-[10px] font-mono text-zinc-400 bg-white/5 px-1.5 py-0.5 rounded">
+                {Math.floor(recordingSeconds / 60)
+                  .toString()
+                  .padStart(2, '0')}
+                :{(recordingSeconds % 60).toString().padStart(2, '0')}
+              </span>
             </div>
-          )}
-        </form>
+            {/* Animated Sound Wave */}
+            <div className="hidden sm:flex items-center gap-0.5 px-2 py-0.5 bg-black/40 rounded-lg border border-white/10 shrink-0">
+              <span className="w-0.5 h-2 bg-[#bb86fc] rounded-full animate-pulse" />
+              <span className="w-0.5 h-4 bg-[#d0bcff] rounded-full animate-pulse delay-75" />
+              <span className="w-0.5 h-2.5 bg-[#bb86fc] rounded-full animate-pulse delay-150" />
+              <span className="w-0.5 h-5 bg-[#9965f4] rounded-full animate-pulse delay-100" />
+              <span className="w-0.5 h-3 bg-[#d0bcff] rounded-full animate-pulse delay-200" />
+            </div>
+            <span className="text-zinc-400 font-normal truncate text-[11px]">
+              Listening... automatically typing into message box
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={stopVoiceRecording}
+            className="px-2.5 py-1 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/40 text-rose-300 text-xs font-medium transition flex items-center gap-1 shrink-0 ml-2"
+            title="Stop recording"
+          >
+            <Square className="w-2.5 h-2.5 fill-rose-300" />
+            <span>Stop</span>
+          </button>
+        </div>
       )}
+
+      {/* Input Surface with Always-Visible Textarea */}
+      <form
+        onSubmit={handleSubmit}
+        className={`relative flex items-center bg-[#1e1e24] border rounded-2xl px-3 py-2 shadow-2xl transition duration-150 ${
+          isRecording
+            ? 'border-[#bb86fc]/80 ring-1 ring-[#bb86fc]/40'
+            : 'border-white/10 focus-within:border-[#bb86fc]/60'
+        }`}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.docx,.txt,.csv,.json,.md"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            setManuallyDismissed(false);
+          }}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            isRecording
+              ? 'Listening with Faster-Whisper... Spoken words will type automatically here...'
+              : 'Message Genie AI...'
+          }
+          rows={1}
+          className="w-full bg-transparent text-white placeholder-zinc-500 text-xs sm:text-sm px-2 py-1 outline-none resize-none max-h-36"
+        />
+
+        {uploadingFile || isTranscribing ? (
+          <div className="p-2 text-[#bb86fc] animate-spin shrink-0">
+            <Loader2 className="w-4 h-4" />
+          </div>
+        ) : isStreaming ? (
+          <button
+            type="button"
+            onClick={onStopStreaming}
+            className="px-3.5 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-semibold transition shrink-0"
+            title="Stop generating"
+          >
+            <Square className="w-3.5 h-3.5 fill-white" />
+          </button>
+        ) : (
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
+              className={`w-9 h-9 rounded-full border transition flex items-center justify-center cursor-pointer shadow-sm group ${
+                isRecording
+                  ? 'bg-rose-500/20 hover:bg-rose-500/30 border-rose-500/60 text-rose-400 animate-pulse'
+                  : 'bg-[#252530] hover:bg-[#323242] border-white/10 text-zinc-300 hover:text-[#bb86fc]'
+              }`}
+              title={
+                isRecording
+                  ? 'Stop Voice Typing'
+                  : 'Faster-Whisper Voice-to-Text (Auto-types as you speak)'
+              }
+            >
+              {isRecording ? (
+                <MicOff className="w-4 h-4" />
+              ) : (
+                <Mic className="w-4 h-4 group-hover:scale-110 transition-transform" />
+              )}
+            </button>
+            <button
+              type="submit"
+              disabled={!text.trim() && !attachedFile}
+              className="w-9 h-9 fab-purple disabled:opacity-40 disabled:hover:bg-[#bb86fc] rounded-full transition flex items-center justify-center cursor-pointer shadow-md shadow-purple-950/40"
+              title="Send"
+            >
+              <Send className="w-4 h-4 text-[#121214]" />
+            </button>
+          </div>
+        )}
+      </form>
     </div>
   );
 };
