@@ -371,9 +371,169 @@ async function fetchWikipediaSummary(query: string): Promise<string | null> {
   return null;
 }
 
+function handleMemoryRequest(
+  prompt: string,
+  memories: Array<{ id: string; content: string; category?: string }>
+): string | null {
+  const p = prompt.trim();
+  const lower = p.toLowerCase();
+
+  // 1. CLEAR MEMORIES
+  if (
+    /^(?:please\s+)?(?:clear|reset|delete|wipe|erase)\s+(?:all\s+)?memories(?:\s+please)?$/i.test(lower) ||
+    /^(?:forget|clear)\s+everything(?:\s+about\s+me)?$/i.test(lower)
+  ) {
+    return `### 🧹 Memories Cleared
+
+All saved memories about you have been cleared. We are starting with a completely fresh slate! ✨
+
+---
+💡 *You can start fresh anytime by saying "Remember that..." to teach me new preferences.*`;
+  }
+
+  // 2. FORGET SPECIFIC MEMORY
+  const forgetMatch = p.match(
+    /^(?:please\s+)?(?:forget|delete\s+memory|remove\s+memory)(?:\s+that|\s+about|\s+my)?\s+(.*)$/i
+  );
+  if (forgetMatch && forgetMatch[1]) {
+    const target = forgetMatch[1].trim();
+    return `### 🧹 Memory Updated
+
+> **Removed from memory**: *${target}*
+
+I have updated my memory and removed this detail. I will no longer factor it into your future answers.
+
+---
+💡 *Ask "What do you remember about me?" anytime to view your active memories.*`;
+  }
+
+  // 3. REMEMBER DIRECTIVE
+  const rememberMatch = p.match(
+    /^(?:please\s+)?(?:remember\s+(?:that\s+|this[:\s]+|to\s+|my\s+|i\s+)?|keep\s+in\s+mind\s+that\s+|don't\s+forget\s+that\s+|save\s+to\s+memory[:\s]+|always\s+remember\s+(?:that\s+)?)(.*)$/i
+  );
+  if (rememberMatch && rememberMatch[1]) {
+    const rawFact = rememberMatch[1].trim();
+    return `### 🧠 Memory Updated
+
+> **Remembered**: *${rawFact}*
+
+I've committed this to memory! I will remember this across all our conversations and tailor my responses accordingly. ✨
+
+---
+💡 *You can ask me "What do you remember about me?" at any time to see everything stored in your profile.*`;
+  }
+
+  // 4. "My name is [Name]"
+  const nameMatch = p.match(/^my\s+name\s+is\s+([A-Za-z\s'-]+)$/i);
+  if (nameMatch && nameMatch[1]) {
+    const name = nameMatch[1].trim();
+    return `### 🧠 Memory Updated
+
+> **Remembered**: *Your name is ${name}*
+
+It's a pleasure to meet you, **${name}**! 👋 I've saved your name to memory so I won't forget it in any future chats.
+
+---
+💡 *Feel free to ask "What is my name?" or "What do you remember about me?" whenever you'd like to check!*`;
+  }
+
+  // 5. "My favorite [X] is [Y]"
+  const favMatch = p.match(/^my\s+favorite\s+(\w+)\s+is\s+(.*)$/i);
+  if (favMatch && favMatch[1] && favMatch[2]) {
+    return `### 🧠 Memory Updated
+
+> **Remembered**: *Favorite ${favMatch[1].trim()} is ${favMatch[2].trim()}*
+
+Noted! I've added your favorite ${favMatch[1].trim()} to your profile memory. 🎯
+
+---
+💡 *I'll remember this preference in future recommendations!*`;
+  }
+
+  // 6. RECALL / QUERY MEMORIES
+  // "What is my name?" / "Who am I?"
+  if (/^who\s+am\s+i\b/i.test(lower) || /^what(?:\'s|\s+is)\s+my\s+name\b/i.test(lower)) {
+    const nameMem = (memories || []).find((m) => /name\s+is\s+([A-Za-z\s'-]+)/i.test(m.content));
+    if (nameMem) {
+      const match = nameMem.content.match(/name\s+is\s+([A-Za-z\s'-]+)/i);
+      const name = match ? match[1].trim() : nameMem.content;
+      return `### 👤 Identity Recall
+
+Based on what you asked me to remember, your name is **${name}**! 😊
+
+Is there anything specific you'd like to work on today, ${name}?`;
+    } else {
+      return `### 👤 Identity Recall
+
+I don't have your name saved in my memory yet. 
+
+You can tell me: *"Remember that my name is Bharath"*, and I'll remember it forever! ✨`;
+    }
+  }
+
+  // "Where do I live?"
+  if (/^where\s+do\s+i\s+live\b/i.test(lower)) {
+    const locMem = (memories || []).find((m) =>
+      /(?:live\s+in|location\s+is|from)\s+([A-Za-z\s,-]+)/i.test(m.content)
+    );
+    if (locMem) {
+      return `### 📍 Location Recall
+
+Based on my memory, you live in / are located at: **${locMem.content}**! 🌍`;
+    }
+  }
+
+  // "What do you remember about me?" / "What are my memories?"
+  if (
+    /what\s+(?:do\s+you|can\s+you)\s+remember\s+(?:about\s+me)?/i.test(lower) ||
+    /what\s+are\s+my\s+memories/i.test(lower) ||
+    /what\s+do\s+you\s+know\s+about\s+me/i.test(lower) ||
+    /show\s+(?:my\s+)?memories/i.test(lower) ||
+    /list\s+(?:my\s+)?memories/i.test(lower)
+  ) {
+    if (memories && memories.length > 0) {
+      const formattedItems = memories
+        .map((m) => {
+          let icon = '📌';
+          if (m.category === 'identity' || /name/i.test(m.content)) icon = '👤';
+          else if (m.category === 'preference' || /prefer|like|favorite/i.test(m.content)) icon = '⭐';
+          else if (m.category === 'instruction' || /always|never|format/i.test(m.content)) icon = '⚙️';
+          return `- ${icon} **${m.content}**`;
+        })
+        .join('\n');
+
+      return `### 🧠 What I Remember About You:
+
+Here are the details currently saved in your profile memory:
+
+${formattedItems}
+
+---
+
+### 🛠️ Memory Controls:
+- To add a new memory: *"Remember that [your note]"*
+- To remove an item: *"Forget that [specific item]"*
+- To reset everything: *"Clear all memories"*`;
+    } else {
+      return `### 🧠 Memory Profile
+
+I don't have any saved memories about you yet. 
+
+You can teach me things about yourself anytime by saying:
+- 👤 *"Remember that my name is Bharath"*
+- 💻 *"Remember that I prefer Python and clean code comments"*
+- 🎯 *"Remember that I am building an LLM project"*
+
+I will store them in memory and use them to personalize all our conversations! ✨`;
+    }
+  }
+
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const { message, model } = await req.json();
+    const { message, model, memories = [] } = await req.json();
     const cleanPrompt = (message || '').trim();
 
     const encoder = new TextEncoder();
@@ -381,10 +541,18 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         let generatedResponse = "";
 
+        // 0. Check memory directives (remember, recall, forget, clear)
+        const memoryAnswer = handleMemoryRequest(cleanPrompt, memories);
+        if (memoryAnswer) {
+          generatedResponse = memoryAnswer;
+        }
+
         // 1. Check if user is asking for code or programming solutions
-        const codeAnswer = getProgrammingResponse(cleanPrompt);
-        if (codeAnswer) {
-          generatedResponse = codeAnswer;
+        if (!generatedResponse) {
+          const codeAnswer = getProgrammingResponse(cleanPrompt);
+          if (codeAnswer) {
+            generatedResponse = codeAnswer;
+          }
         }
 
         // 2. Check factual knowledge via Wikipedia Search & Extract

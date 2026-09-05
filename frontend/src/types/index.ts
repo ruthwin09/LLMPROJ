@@ -31,6 +31,13 @@ export interface Conversation {
   messages?: Message[];
 }
 
+export interface UserMemory {
+  id: string;
+  content: string;
+  created_at: string;
+  category?: 'identity' | 'preference' | 'instruction' | 'general';
+}
+
 export interface DocumentFile {
   id: string;
   filename: string;
@@ -40,3 +47,4 @@ export interface DocumentFile {
   chunk_count: number;
   created_at: string;
 }
+

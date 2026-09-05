@@ -30,6 +30,7 @@ export const streamChatResponse = async (
     model?: string;
     system_prompt?: string;
     document_ids?: string[];
+    memories?: any[];
   },
   onChunk: (chunk: string) => void,
   onError: (err: string) => void,

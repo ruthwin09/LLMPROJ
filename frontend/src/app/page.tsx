@@ -6,9 +6,17 @@ import { Sidebar } from '@/components/Sidebar';
 import { ChatWindow } from '@/components/ChatWindow';
 import { ChatInput } from '@/components/ChatInput';
 import { DocumentDrawer } from '@/components/DocumentDrawer';
+import { MemoryModal } from '@/components/MemoryModal';
 import { getStoredUser } from '@/lib/auth';
 import { apiClient, streamChatResponse } from '@/lib/api';
-import { Conversation, Message, User } from '@/types';
+import { Conversation, Message, User, UserMemory } from '@/types';
+import {
+  getStoredMemories,
+  addMemory,
+  removeMemoryByText,
+  clearAllMemories,
+  detectMemoryIntent,
+} from '@/lib/memory';
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
@@ -16,6 +24,8 @@ export default function Home() {
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [activeMessages, setActiveMessages] = useState<Message[]>([]);
   const [activeModel, setActiveModel] = useState('qwen-2.5-0.5b-local');
+  const [memories, setMemories] = useState<UserMemory[]>([]);
+  const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDocDrawerOpen, setIsDocDrawerOpen] = useState(false);
@@ -23,6 +33,7 @@ export default function Home() {
 
   useEffect(() => {
     initUserSession();
+    setMemories(getStoredMemories());
   }, []);
 
   const initUserSession = async () => {
@@ -202,6 +213,24 @@ export default function Home() {
 
     setActiveMessages([...updatedMessages, assistantMessage]);
 
+    // Process user memory directives (remember, recall, forget, clear)
+    let currentMemories = getStoredMemories();
+    const intent = detectMemoryIntent(text);
+
+    if (intent.type === 'remember' && intent.fact) {
+      const newMem = addMemory(intent.fact, intent.category);
+      currentMemories = [newMem, ...currentMemories.filter((m) => m.id !== newMem.id)];
+      setMemories(currentMemories);
+    } else if (intent.type === 'forget' && intent.target) {
+      const res = removeMemoryByText(intent.target);
+      currentMemories = res.remaining;
+      setMemories(currentMemories);
+    } else if (intent.type === 'clear') {
+      clearAllMemories();
+      currentMemories = [];
+      setMemories([]);
+    }
+
     let accumulatedContent = '';
 
     await streamChatResponse(
@@ -210,6 +239,7 @@ export default function Home() {
         message: text,
         model: activeModel,
         document_ids: attachedDocId ? [attachedDocId] : undefined,
+        memories: currentMemories,
       },
       (chunk) => {
         accumulatedContent += chunk;
@@ -289,6 +319,8 @@ export default function Home() {
           onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
           onNewChat={handleNewChat}
           onOpenSettings={() => (window.location.href = '/settings')}
+          memoriesCount={memories.length}
+          onOpenMemory={() => setIsMemoryModalOpen(true)}
         />
 
         <ChatWindow
@@ -308,6 +340,13 @@ export default function Home() {
         <DocumentDrawer
           isOpen={isDocDrawerOpen}
           onClose={() => setIsDocDrawerOpen(false)}
+        />
+
+        <MemoryModal
+          isOpen={isMemoryModalOpen}
+          onClose={() => setIsMemoryModalOpen(false)}
+          memories={memories}
+          onMemoriesChange={setMemories}
         />
       </div>
     </div>

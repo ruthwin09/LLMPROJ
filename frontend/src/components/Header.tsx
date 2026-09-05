@@ -11,6 +11,7 @@ import {
   Settings,
   LogOut,
   Sparkles,
+  Brain,
 } from 'lucide-react';
 import { User } from '@/types';
 import { clearStoredAuth, getUserInitials } from '@/lib/auth';
@@ -22,6 +23,8 @@ interface HeaderProps {
   onToggleSidebar: () => void;
   onNewChat: () => void;
   onOpenSettings: () => void;
+  memoriesCount?: number;
+  onOpenMemory?: () => void;
 }
 
 const MODELS = [
@@ -40,6 +43,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
   onNewChat,
   onOpenSettings,
+  memoriesCount,
+  onOpenMemory,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -126,6 +131,23 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Share2 className="w-4 h-4" />
         </button>
+
+        {/* Memory Button */}
+        {onOpenMemory && (
+          <button
+            onClick={onOpenMemory}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#24242d] hover:bg-[#2e2e3a] border border-white/10 hover:border-[#bb86fc]/50 text-xs text-zinc-300 hover:text-white transition cursor-pointer"
+            title="Manage Memory (ChatGPT remembers details you tell it)"
+          >
+            <Brain className="w-3.5 h-3.5 text-[#bb86fc]" />
+            <span className="hidden sm:inline font-medium">Memory</span>
+            {memoriesCount !== undefined && memoriesCount > 0 && (
+              <span className="min-w-4 h-4 px-1 rounded-full bg-[#bb86fc]/20 text-[#d0bcff] text-[10px] font-bold flex items-center justify-center">
+                {memoriesCount}
+              </span>
+            )}
+          </button>
+        )}
 
         {user && !isGuest ? (
           <div className="relative" ref={menuRef}>

@@ -16,6 +16,7 @@ import {
   Code2,
   Cpu,
   Layers,
+  Brain,
 } from 'lucide-react';
 import { Message } from '@/types';
 import { CodeBlock } from './CodeBlock';
@@ -81,7 +82,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <span>RAG Document Analysis</span>
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#282834] text-xs font-semibold text-zinc-200 border border-white/10">
-            <span>⚡ Zero Latency Stream</span>
+            <Brain className="w-3.5 h-3.5 text-[#bb86fc]" />
+            <span>🧠 Long-Term Memory</span>
           </span>
         </div>
 
@@ -89,7 +91,24 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full">
           <button
             onClick={() =>
-              onSelectStarterCard('Explain Machine Learning algorithms and Deep Neural Networks in simple terms.')
+              onSelectStarterCard('Remember that my name is Bharath and I prefer Python for writing clean code.')
+            }
+            className="p-5 rounded-3xl bg-[#1e1e24] hover:bg-[#25252e] border border-white/10 hover:border-[#bb86fc]/50 text-left transition duration-200 group shadow-lg"
+          >
+            <div className="flex items-center gap-2.5 text-xs font-bold text-white mb-1.5">
+              <div className="w-7 h-7 rounded-xl bg-[#bb86fc]/20 text-[#bb86fc] flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Brain className="w-4 h-4" />
+              </div>
+              <span className="group-hover:text-[#bb86fc] transition">Teach Memory</span>
+            </div>
+            <p className="text-[11px] text-zinc-400 leading-relaxed">
+              Tell ChatGPT your name and preferences to remember across all chats.
+            </p>
+          </button>
+
+          <button
+            onClick={() =>
+              onSelectStarterCard('What do you remember about me?')
             }
             className="p-5 rounded-3xl bg-[#1e1e24] hover:bg-[#25252e] border border-white/10 hover:border-[#bb86fc]/50 text-left transition duration-200 group shadow-lg"
           >
@@ -97,10 +116,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <div className="w-7 h-7 rounded-xl bg-[#bb86fc]/20 text-[#bb86fc] flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Sparkles className="w-4 h-4" />
               </div>
-              <span className="group-hover:text-[#bb86fc] transition">Explain Machine Learning</span>
+              <span className="group-hover:text-[#bb86fc] transition">Recall My Memories</span>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Understand Transformers, self-attention mechanisms, and neural networks.
+              Ask ChatGPT to list everything currently stored in your profile memory.
             </p>
           </button>
 
