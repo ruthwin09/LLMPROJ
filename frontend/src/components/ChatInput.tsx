@@ -87,7 +87,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   };
 
   return (
-    <div className="max-w-3xl mx-auto w-full px-4 mb-4 select-none">
+    <div className="max-w-3xl mx-auto w-full px-3 sm:px-4 mb-3 sm:mb-4 select-none shrink-0 z-20">
       {/* Action Chips */}
       <div className="flex items-center gap-2 mb-2 overflow-x-auto pb-1 text-xs">
         <button
