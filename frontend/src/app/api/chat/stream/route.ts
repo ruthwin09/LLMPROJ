@@ -327,6 +327,14 @@ async function fetchWikipediaSummary(query: string): Promise<string | null> {
       const sData = await sRes.json();
       const topTitle = sData.query?.search?.[0]?.title;
       if (topTitle) {
+        // Verify title relevance to avoid spurious full-text matches (e.g. Amrutham for TOLET BOARD SHOP)
+        const queryTokens = cleanKeyword.toLowerCase().split(/\W+/).filter((t) => t.length > 2);
+        const lowerTitle = topTitle.toLowerCase();
+        const hasOverlap = queryTokens.some((qt) => lowerTitle.includes(qt));
+        if (!hasOverlap) {
+          return null; // Fall through to DuckDuckGo live web search
+        }
+
         // 2. Extract intro text
         const extUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(topTitle)}&format=json`;
         const extRes = await fetch(extUrl, {
