@@ -93,9 +93,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     };
   }, []);
 
+  const finalTranscriptRef = useRef<string>('');
+
   const startVoiceRecording = async () => {
     try {
+      const SpeechRecognition =
+        typeof window !== 'undefined'
+          ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+          : null;
+
+      if (!SpeechRecognition && (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia)) {
+        alert('Voice typing is not supported in this browser. Please use Google Chrome or Microsoft Edge.');
+        return;
+      }
+
       baseTextRef.current = text;
+      finalTranscriptRef.current = text.trim() ? `${text.trim()} ` : '';
       isRecordingRef.current = true;
       setRecordingSeconds(0);
       setIsRecording(true);
@@ -104,25 +117,39 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         setRecordingSeconds((prev) => prev + 1);
       }, 1000);
 
-      // 1. Client-side Real-time Speech Recognition (Auto-types directly as user speaks)
-      const SpeechRecognition =
-        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      // Focus textarea immediately
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
 
+      // Method 1: Web Speech API (Chrome, Edge, Safari) - Direct real-time typing with ZERO API lag
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = 'en-US';
+        recognition.lang = (typeof navigator !== 'undefined' && navigator.language) ? navigator.language : 'en-US';
+        recognition.maxAlternatives = 1;
 
         recognition.onresult = (event: any) => {
-          let sessionTranscript = '';
-          for (let i = 0; i < event.results.length; i++) {
-            sessionTranscript += event.results[i][0].transcript;
+          let interim = '';
+          let newlyFinal = '';
+
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              newlyFinal += transcript + ' ';
+            } else {
+              interim += transcript;
+            }
           }
-          const speech = sessionTranscript.trim();
-          if (speech) {
-            const prefix = baseTextRef.current ? `${baseTextRef.current.trim()} ` : '';
-            setText(`${prefix}${speech}`);
+
+          if (newlyFinal) {
+            finalTranscriptRef.current += newlyFinal;
+          }
+
+          const combined = `${finalTranscriptRef.current}${interim}`.trim();
+          if (combined) {
+            setText(combined);
             if (textareaRef.current) {
               textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
             }
@@ -130,11 +157,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         };
 
         recognition.onerror = (err: any) => {
-          console.warn('Faster-Whisper speech recognition warning:', err);
+          console.warn('[Faster-Whisper] Speech recognition error:', err.error);
+          if (err.error === 'not-allowed') {
+            stopVoiceRecording();
+            alert('Microphone access was denied. Please allow microphone permission in your browser address bar.');
+          }
         };
 
         recognition.onend = () => {
-          // Keep recognition alive while recording is active
+          // Keep recognition active while recording button is toggled on
           if (isRecordingRef.current) {
             try {
               recognition.start();
@@ -142,12 +173,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           }
         };
 
-        recognition.start();
-        recognitionRef.current = recognition;
-      }
-
-      // 2. Audio Stream Capture for Faster-Whisper Serverless API Fallback
-      if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+        try {
+          recognition.start();
+          recognitionRef.current = recognition;
+        } catch (startErr: any) {
+          console.warn('Recognition start exception:', startErr);
+        }
+      } else {
+        // Method 2: MediaRecorder fallback for browsers without Web Speech (e.g. Firefox)
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
         const mediaRecorder = new MediaRecorder(stream);
@@ -160,17 +193,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         mediaRecorder.start(250);
         mediaRecorderRef.current = mediaRecorder;
       }
-
-      // Auto-focus textarea so user can see their words typing in
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-      }
     } catch (err: any) {
-      console.error('Microphone error:', err);
+      console.error('Microphone activation error:', err);
       isRecordingRef.current = false;
       setIsRecording(false);
       if (timerRef.current) clearInterval(timerRef.current);
-      alert('Microphone permission is required to use Faster-Whisper Voice-to-Text.');
+      alert('Could not access microphone. Please check your browser microphone permissions.');
     }
   };
 
@@ -203,7 +231,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       textareaRef.current.focus();
     }
 
-    // Serverless Faster-Whisper Fallback: if browser SpeechRecognition produced nothing but audio was captured
+    // Audio stream fallback for browsers without native SpeechRecognition
     if (audioChunksRef.current.length > 0 && !text.trim()) {
       setIsTranscribing(true);
       const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
@@ -216,7 +244,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           body: formData,
         });
         const data = await res.json();
-        if (data.text) {
+        if (data.text && !data.text.includes('Audio recorded and processed')) {
           const prefix = baseTextRef.current ? `${baseTextRef.current.trim()} ` : '';
           setText(`${prefix}${data.text}`);
         }
