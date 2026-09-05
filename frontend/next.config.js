@@ -12,11 +12,14 @@ const nextConfig = {
         trailingSlash: true,             // Firebase needs this for clean URLs
       }
     : {
-        // Local dev — proxy /api/* to FastAPI backend
+        // Local dev — proxy to local backend if explicitly specified, otherwise serve Next.js API routes
         async rewrites() {
+          if (process.env.VERCEL) {
+            return [];
+          }
           return [
             {
-              source: '/api/:path*',
+              source: '/api/proxy/:path*',
               destination: 'http://localhost:8000/api/:path*',
             },
           ];
