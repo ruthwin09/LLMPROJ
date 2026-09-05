@@ -573,11 +573,26 @@ export async function POST(req: NextRequest) {
 
         // 0. Check Florence-2 Vision Analysis (Camera photo snapshot or explicit vision model)
         if (effectiveImage || model === 'florence-2' || cleanPrompt.toLowerCase().startsWith('/vision')) {
-          generatedResponse = await analyzeWithFlorence2(
+          // Immediately emit a status token so the UI shows activity
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: '🔍 Scanning image with Florence-2...\n\n' })}\n\n`));
+
+          const florenceResult = await analyzeWithFlorence2(
             cleanPrompt,
             effectiveImage,
             vision_task || '<MORE_DETAILED_CAPTION>'
           );
+
+          // Stream result word-by-word for smooth reading
+          const florenceWords = florenceResult.split(/(\s+)/);
+          for (const word of florenceWords) {
+            if (word) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: word })}\n\n`));
+              await new Promise(r => setTimeout(r, 12));
+            }
+          }
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+          return;
         }
 
         // 0.1 Check uploaded document content first (PDF, TXT, CSV, JSON, MD RAG)

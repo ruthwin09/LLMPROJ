@@ -1,7 +1,8 @@
 /**
  * Florence-2 Vision Engine
- * Calls the live Gradio Space: https://gokaygokay-florence-2.hf.space
- * Model: microsoft/Florence-2-large-ft
+ * Uses /api/predict — synchronous direct call (no queue polling).
+ * Space: https://gokaygokay-florence-2.hf.space
+ * Model: microsoft/Florence-2-base-ft  (fast, accurate)
  */
 
 const GRADIO_BASE = 'https://gokaygokay-florence-2.hf.space';
@@ -14,7 +15,7 @@ const TASK_LABEL_MAP: Record<string, string> = {
   '<OD>':                    'Object Detection',
   '<OCR>':                   'OCR',
   '<OCR_WITH_REGION>':       'OCR with Region',
-  '<VQA>':                   'More Detailed Caption',   // VQA uses caption + text_input
+  '<VQA>':                   'More Detailed Caption',
   'scene':                   'More Detailed Caption',
   'od':                      'Object Detection',
   'ocr':                     'OCR',
@@ -22,20 +23,16 @@ const TASK_LABEL_MAP: Record<string, string> = {
 };
 
 function resolveTaskLabel(task: string): string {
-  return TASK_LABEL_MAP[task] || 'More Detailed Caption';
-}
-
-function generateSessionHash(): string {
-  return Math.random().toString(36).slice(2, 14);
+  return TASK_LABEL_MAP[task] ?? 'More Detailed Caption';
 }
 
 /**
- * Analyzes an image using the real Florence-2 Gradio Space API.
- * Returns a formatted markdown string with analysis results.
+ * Analyzes an image using the real Florence-2 Gradio Space.
+ * Uses /api/predict for a fast synchronous response.
  *
- * @param prompt   - User's question / prompt (used for VQA tasks)
- * @param imageUrl - Base64 data URL (data:image/jpeg;base64,...) or HTTPS image URL
- * @param task     - Vision task token (e.g. '<MORE_DETAILED_CAPTION>', '<OD>', '<OCR>')
+ * @param prompt   - User question (used for VQA)
+ * @param imageUrl - base64 data URL or HTTPS URL
+ * @param task     - Vision task token e.g. '<OD>', '<OCR>', '<MORE_DETAILED_CAPTION>'
  */
 export async function analyzeWithFlorence2(
   prompt: string,
@@ -46,90 +43,55 @@ export async function analyzeWithFlorence2(
     return '⚠️ No image provided. Please capture or upload a photo first.';
   }
 
-  const taskLabel  = resolveTaskLabel(task);
-  const textInput  = (task === '<VQA>' || task === 'vqa') ? (prompt || '') : '';
-  const sessionHash = generateSessionHash();
+  const taskLabel = resolveTaskLabel(task);
+  const textInput = (task === '<VQA>' || task === 'vqa') ? (prompt || '') : '';
 
-  // ── Step 1: Join the Gradio queue ──────────────────────────────────────────
-  let eventId: string;
+  // ── /api/predict: synchronous, no queue polling needed ───────────────────
   try {
-    const joinRes = await fetch(`${GRADIO_BASE}/queue/join`, {
-      method: 'POST',
+    const controller = new AbortController();
+    const timeoutId  = setTimeout(() => controller.abort(), 45_000); // 45 s max
+
+    const res = await fetch(`${GRADIO_BASE}/api/predict`, {
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
+      signal:  controller.signal,
       body: JSON.stringify({
         fn_index: 4,
         data: [
           imageUrl,
           taskLabel,
           textInput,
-          'microsoft/Florence-2-large',
+          'microsoft/Florence-2-base-ft',  // fastest model
         ],
-        session_hash: sessionHash,
-        event_data: null,
       }),
     });
 
-    if (!joinRes.ok) {
-      throw new Error(`Queue join failed: ${joinRes.status} ${joinRes.statusText}`);
+    clearTimeout(timeoutId);
+
+    if (!res.ok) {
+      throw new Error(`Florence-2 API returned ${res.status}: ${res.statusText}`);
     }
 
-    const joinData = await joinRes.json();
-    eventId = joinData.event_id;
+    const json = await res.json() as { data?: unknown[]; error?: string };
+
+    if (json.error) {
+      throw new Error(json.error);
+    }
+
+    const resultData = json.data;
+    if (!Array.isArray(resultData) || resultData.length === 0) {
+      throw new Error('Empty response from Florence-2');
+    }
+
+    return formatFlorenceResult(resultData, taskLabel, prompt);
+
   } catch (err: any) {
-    console.error('[Florence-2] Queue join error:', err);
+    if (err.name === 'AbortError') {
+      return '⏱️ Florence-2 timed out (45 s). The server may be under load — please try again.';
+    }
+    console.error('[Florence-2] API error:', err);
     return `❌ Florence-2 vision unavailable: ${err.message}`;
   }
-
-  // ── Step 2: Poll for result via SSE stream ─────────────────────────────────
-  const MAX_WAIT_MS  = 60_000;
-  const POLL_INTERVAL_MS = 800;
-  const startTime = Date.now();
-
-  while (Date.now() - startTime < MAX_WAIT_MS) {
-    await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
-
-    try {
-      const dataRes = await fetch(
-        `${GRADIO_BASE}/queue/data?session_hash=${sessionHash}`,
-        { headers: { Accept: 'text/event-stream' } }
-      );
-
-      if (!dataRes.ok || !dataRes.body) continue;
-
-      const text = await dataRes.text();
-
-      // Parse SSE events from the response body
-      const lines = text.split('\n');
-      for (const line of lines) {
-        if (!line.startsWith('data:')) continue;
-        try {
-          const json = JSON.parse(line.slice(5).trim());
-
-          if (json.msg === 'process_completed') {
-            const output = json.output;
-            if (output?.error) {
-              return `❌ Florence-2 analysis error: ${output.error}`;
-            }
-
-            const resultData = output?.data;
-            if (Array.isArray(resultData) && resultData.length > 0) {
-              return formatFlorenceResult(resultData, taskLabel, prompt);
-            }
-          }
-
-          if (json.msg === 'queue_full') {
-            return '⏳ Florence-2 server is busy. Please try again in a moment.';
-          }
-        } catch {
-          // Not a JSON SSE event, skip
-        }
-      }
-    } catch (err) {
-      // Network blip during polling — keep trying
-    }
-  }
-
-  return '⏱️ Florence-2 timed out. The image may be too large or the server is under load. Please try again.';
 }
 
 function formatFlorenceResult(
@@ -137,7 +99,6 @@ function formatFlorenceResult(
   taskLabel: string,
   prompt: string
 ): string {
-  // data[0] is the text output, data[1] may be bounding-box JSON
   const textOutput = typeof data[0] === 'string' ? data[0].trim() : '';
   const boxJson    = data[1];
 
@@ -152,20 +113,16 @@ function formatFlorenceResult(
     md += `**Result:**\n\n${textOutput}\n\n`;
   }
 
-  // If object detection returned bounding boxes, render them as a list
+  // Object detection: list detected labels
   if (taskLabel === 'Object Detection' && boxJson && typeof boxJson === 'object') {
     try {
       const boxes = boxJson as { labels?: string[]; bboxes?: number[][] };
       if (boxes.labels && boxes.labels.length > 0) {
         md += `**Detected Objects (${boxes.labels.length}):**\n`;
-        boxes.labels.slice(0, 20).forEach((label, i) => {
-          md += `- ${label}\n`;
-        });
+        boxes.labels.slice(0, 20).forEach(label => { md += `- ${label}\n`; });
         md += '\n';
       }
-    } catch {
-      // ignore formatting error
-    }
+    } catch { /* ignore */ }
   }
 
   if (!textOutput) {
