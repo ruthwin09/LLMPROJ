@@ -34,6 +34,16 @@ export default function Home() {
   useEffect(() => {
     initUserSession();
     setMemories(getStoredMemories());
+
+    // Auto-adjust layout according to user device screen width (phones/tablets start minimized)
+    const handleDeviceAutoAdjust = () => {
+      const isNarrowDevice = window.innerWidth < 1024;
+      setIsSidebarOpen(!isNarrowDevice);
+    };
+
+    handleDeviceAutoAdjust();
+    window.addEventListener('resize', handleDeviceAutoAdjust);
+    return () => window.removeEventListener('resize', handleDeviceAutoAdjust);
   }, []);
 
   const initUserSession = async () => {
@@ -313,7 +323,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#121214]">
+    <div className="flex h-[100dvh] min-h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-[#121214]">
       {/* Sidebar */}
       <Sidebar
         conversations={conversations}

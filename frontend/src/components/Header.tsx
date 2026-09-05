@@ -73,12 +73,13 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="flex items-center justify-between px-4 py-2.5 bg-[#18181e]/95 backdrop-blur-md border-b border-white/10 text-white sticky top-0 z-30 select-none">
       {/* Left: Menu Toggle + ChatGPT Brand */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Toggle Sidebar Button — only shows PanelLeftOpen when minimized on desktop, avoids duplicate [<] */}
         <button
           onClick={onToggleSidebar}
           className={`p-2 rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 ${
             isSidebarOpen
-              ? 'text-zinc-300 hover:text-white hover:bg-white/10'
+              ? 'text-zinc-400 hover:text-white hover:bg-white/10 md:hidden'
               : 'text-[#bb86fc] bg-[#bb86fc]/15 hover:bg-[#bb86fc]/25 ring-1 ring-[#bb86fc]/40 shadow-md shadow-purple-950/40'
           }`}
           title={isSidebarOpen ? 'Minimize Sidebar (touch to collapse)' : 'Maximize Sidebar (touch to expand)'}
