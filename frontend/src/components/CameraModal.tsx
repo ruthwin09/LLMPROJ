@@ -16,10 +16,12 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+import { extractTextLocally } from '@/lib/ocr_client';
+
 interface CameraModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCapture: (imageDataUrl: string, prompt: string, task: string) => void;
+  onCapture: (imageDataUrl: string, prompt: string, task: string, extractedText?: string) => void;
 }
 
 export const CameraModal: React.FC<CameraModalProps> = ({
@@ -33,6 +35,7 @@ export const CameraModal: React.FC<CameraModalProps> = ({
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<string>('<MORE_DETAILED_CAPTION>');
   const [customPrompt, setCustomPrompt] = useState<string>('');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -154,8 +157,10 @@ export const CameraModal: React.FC<CameraModalProps> = ({
     }
   };
 
-  const handleAnalyze = () => {
-    if (!capturedImage) return;
+  const handleAnalyze = async () => {
+    if (!capturedImage || isProcessing) return;
+
+    setIsProcessing(true);
 
     let finalPrompt = customPrompt.trim();
     if (!finalPrompt) {
@@ -165,7 +170,15 @@ export const CameraModal: React.FC<CameraModalProps> = ({
       else finalPrompt = 'Analyze this picture in detail with Florence-2.';
     }
 
-    onCapture(capturedImage, finalPrompt, selectedTask);
+    let ocrText = '';
+    try {
+      ocrText = await extractTextLocally(capturedImage);
+    } catch (err) {
+      console.warn('OCR extraction error:', err);
+    }
+
+    setIsProcessing(false);
+    onCapture(capturedImage, finalPrompt, selectedTask, ocrText);
     onClose();
   };
 
@@ -399,10 +412,11 @@ export const CameraModal: React.FC<CameraModalProps> = ({
                 <button
                   type="button"
                   onClick={handleAnalyze}
-                  className="px-5 py-2 rounded-xl bg-[#bb86fc] hover:bg-[#a36dfc] text-[#121214] text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-purple-900/40"
+                  disabled={isProcessing}
+                  className="px-5 py-2 rounded-xl bg-[#bb86fc] hover:bg-[#a36dfc] disabled:opacity-50 text-[#121214] text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-purple-900/40 cursor-pointer"
                 >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Analyze with Florence-2</span>
+                  <Sparkles className={`w-3.5 h-3.5 ${isProcessing ? 'animate-spin' : ''}`} />
+                  <span>{isProcessing ? 'Reading image...' : 'Analyze with Florence-2'}</span>
                 </button>
               </div>
             </div>

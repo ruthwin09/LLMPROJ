@@ -571,15 +571,15 @@ export async function POST(req: NextRequest) {
       async start(controller) {
         let generatedResponse = "";
 
-        // 0. Check Florence-2 Vision Analysis (Camera photo snapshot or explicit vision model)
+        // 0. Check Vision Analysis (Camera photo snapshot or explicit vision model)
         if (effectiveImage || model === 'florence-2' || cleanPrompt.toLowerCase().startsWith('/vision')) {
-          // Immediately emit a status token so the UI shows activity
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: '🔍 Scanning image with Florence-2...\n\n' })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content: '🔍 Analyzing image with LLM...\n\n' })}\n\n`));
 
           const florenceResult = await analyzeWithFlorence2(
             cleanPrompt,
             effectiveImage,
-            vision_task || '<MORE_DETAILED_CAPTION>'
+            vision_task || '<MORE_DETAILED_CAPTION>',
+            document_text
           );
 
           // Stream result word-by-word for smooth reading

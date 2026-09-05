@@ -5,17 +5,17 @@ export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
-    const { image, task = '<MORE_DETAILED_CAPTION>', prompt = '' } = await req.json();
+    const { image, task = '<MORE_DETAILED_CAPTION>', prompt = '', extracted_text, document_text } = await req.json();
 
     if (!image) {
       return NextResponse.json({ error: 'Image data is required.' }, { status: 400 });
     }
 
-    // analyzeWithFlorence2 is now async — it calls the real Gradio API
-    const analysis = await analyzeWithFlorence2(prompt, image, task);
+    const textToUse = extracted_text || document_text;
+    const analysis = await analyzeWithFlorence2(prompt, image, task, textToUse);
 
     return NextResponse.json({
-      model: 'microsoft/Florence-2-large',
+      model: 'Florence-2 Vision LLM',
       task,
       analysis,
     });

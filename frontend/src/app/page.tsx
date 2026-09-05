@@ -257,7 +257,7 @@ export default function Home() {
       {
         conversation_id: currentId,
         message: text,
-        model: attachedImage ? 'florence-2' : activeModel,
+        model: activeModel,
         document_ids: attachedDocId ? [attachedDocId] : undefined,
         document_text: attachedDocText,
         document_name: attachedDocName,

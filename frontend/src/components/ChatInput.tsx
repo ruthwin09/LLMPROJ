@@ -73,8 +73,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const baseTextRef = useRef<string>('');
   const isRecordingRef = useRef<boolean>(false);
 
-  const handleCameraCapture = (imageDataUrl: string, prompt: string, task: string) => {
-    onSend(prompt, undefined, undefined, undefined, imageDataUrl, task);
+  const handleCameraCapture = (imageDataUrl: string, prompt: string, task: string, extractedText?: string) => {
+    onSend(prompt, undefined, extractedText || undefined, 'Camera Snapshot', imageDataUrl, task);
   };
 
   // Cleanup recording on unmount
