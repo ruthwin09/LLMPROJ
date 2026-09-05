@@ -33,7 +33,9 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
   const [signInError, setSignInError] = useState<string | null>(null);
   const buttonContainerRef = useRef<HTMLDivElement>(null);
 
-  const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const clientId =
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+    '894836364823-p3q8a5mspguceiqjsq0akqtkq48ljjsn.apps.googleusercontent.com';
 
   // ---------------------------------------------------------------------------
   // Exchange Google credential with backend
@@ -130,13 +132,16 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
       // Render the official Google-styled button inside our container
       if (buttonContainerRef.current) {
         buttonContainerRef.current.innerHTML = '';
+        const computedWidth = buttonContainerRef.current.offsetWidth || 340;
+        const validWidth = Math.max(250, Math.min(380, computedWidth));
+
         window.google.accounts.id.renderButton(buttonContainerRef.current, {
           type: 'standard',
           theme: 'filled_black',
           size: 'large',
           text: 'continue_with',
           shape: 'rectangular',
-          width: buttonContainerRef.current.offsetWidth || 400,
+          width: validWidth,
         });
       }
 
