@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Square, X, FileText, Loader2, Sparkles, BarChart2, RotateCcw } from 'lucide-react';
+import { Send, Paperclip, Square, X, FileText, Loader2, Sparkles, BarChart2, RotateCcw, Image as ImageIcon } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 
 interface ChatInputProps {
@@ -121,6 +121,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         >
           <Sparkles className="w-3.5 h-3.5 text-[#bb86fc]" />
           <span>Code Helper</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setText('Generate an image of ');
+            textareaRef.current?.focus();
+          }}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1e1e24] hover:bg-[#282834] border border-white/10 text-zinc-300 hover:text-white transition shrink-0"
+        >
+          <ImageIcon className="w-3.5 h-3.5 text-[#bb86fc]" />
+          <span>Generate Image</span>
         </button>
       </div>
 

@@ -19,6 +19,8 @@ import {
   Cpu,
   Layers,
   Brain,
+  Palette,
+  ExternalLink,
 } from 'lucide-react';
 import { Message } from '@/types';
 import { CodeBlock } from './CodeBlock';
@@ -96,6 +98,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <Brain className="w-3.5 h-3.5 text-[#bb86fc]" />
             <span>🧠 Long-Term Memory</span>
           </span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#bb86fc]/20 text-xs font-semibold text-[#d0bcff] border border-[#bb86fc]/40">
+            <Palette className="w-3.5 h-3.5 text-[#bb86fc]" />
+            <span>🎨 SANA 1.6B Image Gen</span>
+          </span>
         </div>
 
         {/* Material 3 Starter Suggestion Cards */}
@@ -156,19 +162,19 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           <button
             onClick={() =>
               onSelectStarterCard(
-                'What are the key differences between Supervised, Unsupervised, and Reinforcement Learning?'
+                'Generate an image of a majestic cybernetic dragon soaring above a neon-lit futuristic skyline, 8k resolution'
               )
             }
             className="p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl bg-[#1e1e24] hover:bg-[#25252e] border border-white/10 hover:border-[#bb86fc]/50 text-left transition duration-200 group shadow-lg"
           >
             <div className="flex items-center gap-2 text-xs font-bold text-white mb-1">
               <div className="w-6 h-6 rounded-lg bg-[#bb86fc]/20 text-[#bb86fc] flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Layers className="w-3.5 h-3.5" />
+                <Palette className="w-3.5 h-3.5" />
               </div>
-              <span className="group-hover:text-[#bb86fc] transition">AI Paradigms Comparison</span>
+              <span className="group-hover:text-[#bb86fc] transition">🎨 SANA 1.6B Image Gen</span>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Compare Supervised vs Unsupervised vs Reinforcement learning models.
+              Generate 1024×1024 high-res AI images using NVIDIA SANA linear diffusion.
             </p>
           </button>
         </div>
@@ -259,6 +265,37 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 {children}
               </blockquote>
             ),
+            img: ({ src, alt, ...props }: any) => {
+              return (
+                <div className="my-3 rounded-2xl overflow-hidden border border-white/15 bg-[#18181e] shadow-2xl group max-w-lg">
+                  <div className="relative overflow-hidden bg-black/50">
+                    <img
+                      src={src}
+                      alt={alt || 'SANA 1.6B Generated Image'}
+                      loading="lazy"
+                      className="w-full h-auto object-cover rounded-t-2xl transition-transform duration-300 group-hover:scale-[1.01]"
+                      {...props}
+                    />
+                  </div>
+                  <div className="p-3 bg-[#1e1e24] border-t border-white/10 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex items-center gap-1.5 text-zinc-300 truncate font-medium">
+                      <Palette className="w-3.5 h-3.5 text-[#bb86fc] shrink-0" />
+                      <span className="truncate">{alt || 'SANA 1.6B Synthesis'}</span>
+                    </div>
+                    <a
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2.5 py-1 rounded-lg bg-[#bb86fc]/20 hover:bg-[#bb86fc]/30 text-[#d0bcff] font-semibold flex items-center gap-1 transition shrink-0 active:scale-95"
+                      title="Open full resolution in new tab"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Full HD</span>
+                    </a>
+                  </div>
+                </div>
+              );
+            },
           }}
         >
           {content}

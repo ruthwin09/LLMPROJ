@@ -531,6 +531,51 @@ I will store them in memory and use them to personalize all our conversations! �
   return null;
 }
 
+// Check if request is intended for SANA 1.6B image generation
+function isImageGenerationIntent(prompt: string, model?: string): boolean {
+  if (model === 'sana-1.6b') return true;
+  const p = prompt.trim().toLowerCase();
+  if (p.startsWith('/image') || p.startsWith('/draw') || p.startsWith('/img') || p.startsWith('/generate')) return true;
+  if (/^(?:generate|create|make|draw|paint|render|produce|design)\s+(?:an?\s+)?(?:image|picture|photo|artwork|illustration|wallpaper|portrait|drawing|visual|scene)\b/i.test(p)) {
+    return true;
+  }
+  if (/(?:generate|create|make|draw|paint)\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|photo|artwork|visual)\b/i.test(p)) {
+    return true;
+  }
+  return false;
+}
+
+// Generate SANA 1.6B high-resolution image synthesis response
+function handleSanaImageGeneration(prompt: string): string {
+  let cleaned = prompt
+    .replace(/^(\/image|\/draw|\/img|\/generate)\s*/i, '')
+    .replace(/^(?:please\s+)?(?:generate|create|make|draw|paint|render|produce|design)\s+(?:me\s+)?(?:an?\s+)?(?:image|picture|photo|artwork|illustration|wallpaper|portrait|drawing|visual|scene)\s+(?:of|about|depicting|showing|with)?\s*/i, '')
+    .trim();
+
+  if (!cleaned) cleaned = prompt.trim();
+
+  const seed = Math.floor(Math.random() * 999999) + 1;
+  const encodedPrompt = encodeURIComponent(cleaned);
+  const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?model=sana&width=1024&height=1024&nologo=true&seed=${seed}`;
+
+  return `### 🎨 SANA 1.6B AI Image Synthesis
+
+**Prompt:** *"${cleaned}"*
+
+![${cleaned}](${imageUrl})
+
+---
+
+### ⚙️ Generation Specs:
+- **Model:** NVIDIA SANA 1.6B (Linear Diffusion Transformer)
+- **Resolution:** 1024 × 1024 px HD
+- **Text Encoder:** DeepSeek-VL Multi-Scale Encoder
+- **Architecture:** Linear Attention DiT (0.5s–2s fast synthesis)
+- **Seed:** \`${seed}\`
+
+💡 *To create another image, describe any character, scenery, concept, or artistic style!*`;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { message, model, memories = [] } = await req.json();
@@ -545,6 +590,11 @@ export async function POST(req: NextRequest) {
         const memoryAnswer = handleMemoryRequest(cleanPrompt, memories);
         if (memoryAnswer) {
           generatedResponse = memoryAnswer;
+        }
+
+        // 0.5. Check SANA 1.6B Image Generation
+        if (!generatedResponse && isImageGenerationIntent(cleanPrompt, model)) {
+          generatedResponse = handleSanaImageGeneration(cleanPrompt);
         }
 
         // 1. Check if user is asking for code or programming solutions
@@ -568,9 +618,9 @@ export async function POST(req: NextRequest) {
           const lower = cleanPrompt.toLowerCase();
 
           if (lower.includes('who are you') || lower.includes('what are you') || lower.includes('your name')) {
-            generatedResponse = `### 🤖 Hello! I am ChatGPT.
+            generatedResponse = `### 🤖 Hello! I am Genie AI.
 
-I am an advanced conversational AI assistant running 24/7 on the **Vercel Global Edge Network**. 
+I am your advanced intelligent assistant running 24/7 on the **Vercel Global Edge Network**. 
 
 ---
 

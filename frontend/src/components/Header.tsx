@@ -33,6 +33,7 @@ interface HeaderProps {
 const MODELS = [
   { id: 'qwen-2.5-0.5b-local', name: '⚡ Qwen 2.5 0.5B (100% Free & Keyless)' },
   { id: 'qwen-2.5-1.5b-local', name: '🧠 Qwen 2.5 1.5B (Keyless Deep Reasoning)' },
+  { id: 'sana-1.6b', name: '🎨 SANA 1.6B (Text-to-Image Diffusion)' },
   { id: 'llama-3.3-70b-versatile', name: '☁️ Llama 3.3 70B (Groq Cloud)' },
   { id: 'gemini-1.5-flash', name: '☁️ Google Gemini 1.5 Flash' },
   { id: 'gpt-4o-mini', name: '☁️ OpenAI GPT-4o Mini' },
