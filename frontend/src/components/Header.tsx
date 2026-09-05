@@ -12,6 +12,8 @@ import {
   LogOut,
   Sparkles,
   Brain,
+  PanelLeftOpen,
+  PanelLeftClose,
 } from 'lucide-react';
 import { User } from '@/types';
 import { clearStoredAuth, getUserInitials } from '@/lib/auth';
@@ -25,6 +27,7 @@ interface HeaderProps {
   onOpenSettings: () => void;
   memoriesCount?: number;
   onOpenMemory?: () => void;
+  isSidebarOpen?: boolean;
 }
 
 const MODELS = [
@@ -45,6 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSettings,
   memoriesCount,
   onOpenMemory,
+  isSidebarOpen = true,
 }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -72,10 +76,18 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="p-2 rounded-xl text-zinc-300 hover:text-white hover:bg-white/10 transition"
-          title="Toggle Navigation"
+          className={`p-2 rounded-xl transition flex items-center justify-center cursor-pointer active:scale-95 ${
+            isSidebarOpen
+              ? 'text-zinc-300 hover:text-white hover:bg-white/10'
+              : 'text-[#bb86fc] bg-[#bb86fc]/15 hover:bg-[#bb86fc]/25 ring-1 ring-[#bb86fc]/40 shadow-md shadow-purple-950/40'
+          }`}
+          title={isSidebarOpen ? 'Minimize Sidebar (touch to collapse)' : 'Maximize Sidebar (touch to expand)'}
         >
-          <Menu className="w-5 h-5" />
+          {isSidebarOpen ? (
+            <PanelLeftClose className="w-5 h-5" />
+          ) : (
+            <PanelLeftOpen className="w-5 h-5" />
+          )}
         </button>
 
         <div className="flex items-center gap-2 cursor-pointer" onClick={onNewChat}>

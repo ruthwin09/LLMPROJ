@@ -294,6 +294,24 @@ export default function Home() {
     handleSendMessage(newText);
   };
 
+  const [edgeTouchStartX, setEdgeTouchStartX] = useState<number | null>(null);
+
+  const handleEdgeTouchStart = (e: React.TouchEvent) => {
+    if (e.touches[0].clientX < 50) {
+      setEdgeTouchStartX(e.touches[0].clientX);
+    }
+  };
+
+  const handleEdgeTouchEnd = (e: React.TouchEvent) => {
+    if (edgeTouchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const deltaX = touchEndX - edgeTouchStartX;
+    if (deltaX > 40 && !isSidebarOpen) {
+      setIsSidebarOpen(true);
+    }
+    setEdgeTouchStartX(null);
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#121214]">
       {/* Sidebar */}
@@ -308,10 +326,15 @@ export default function Home() {
         onDelete={handleDelete}
         onOpenDocuments={() => setIsDocDrawerOpen(true)}
         onOpenSettings={() => (window.location.href = '/settings')}
+        onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
       {/* Main Workspace */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#121214]">
+      <div
+        onTouchStart={handleEdgeTouchStart}
+        onTouchEnd={handleEdgeTouchEnd}
+        className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#121214]"
+      >
         <Header
           user={user}
           activeModel={activeModel}
@@ -321,6 +344,7 @@ export default function Home() {
           onOpenSettings={() => (window.location.href = '/settings')}
           memoriesCount={memories.length}
           onOpenMemory={() => setIsMemoryModalOpen(true)}
+          isSidebarOpen={isSidebarOpen}
         />
 
         <ChatWindow
