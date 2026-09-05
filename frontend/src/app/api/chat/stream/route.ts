@@ -536,18 +536,7 @@ function handleSanaImageGeneration(prompt: string): string {
 
 **Prompt:** *"${cleaned}"*
 
-![${cleaned}](${imageUrl})
-
----
-
-### ⚙️ Generation Specs:
-- **Model:** NVIDIA SANA 1.6B (Linear Diffusion Transformer)
-- **Resolution:** 1024 × 1024 px HD
-- **Text Encoder:** DeepSeek-VL Multi-Scale Encoder
-- **Architecture:** Linear Attention DiT (0.5s–2s fast synthesis)
-- **Seed:** \`${seed}\`
-
-💡 *To create another image, describe any character, scenery, concept, or artistic style!*`;
+![${cleaned}](${imageUrl})`;
 }
 
 export async function POST(req: NextRequest) {
