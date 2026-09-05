@@ -18,12 +18,21 @@ import {
   Mic,
   MicOff,
   Check,
+  Camera,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api';
 import { getPromptSuggestions, PromptSuggestion } from '@/lib/suggestions';
+import { CameraModal } from './CameraModal';
 
 interface ChatInputProps {
-  onSend: (message: string, attachedDocId?: string, attachedDocText?: string, attachedDocName?: string) => void;
+  onSend: (
+    message: string,
+    attachedDocId?: string,
+    attachedDocText?: string,
+    attachedDocName?: string,
+    attachedImage?: string,
+    visionTask?: string
+  ) => void;
   onOpenUpload: () => void;
   isStreaming: boolean;
   onStopStreaming?: () => void;
@@ -48,6 +57,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isTranscribing, setIsTranscribing] = useState(false);
 
+  // Florence-2 Camera Vision State
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const [attachedImage, setAttachedImage] = useState<string | null>(null);
+  const [visionTask, setVisionTask] = useState<string>('<MORE_DETAILED_CAPTION>');
+
   const containerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,6 +72,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const timerRef = useRef<any>(null);
   const baseTextRef = useRef<string>('');
   const isRecordingRef = useRef<boolean>(false);
+
+  const handleCameraCapture = (imageDataUrl: string, prompt: string, task: string) => {
+    onSend(prompt, undefined, undefined, undefined, imageDataUrl, task);
+  };
 
   // Cleanup recording on unmount
   useEffect(() => {
@@ -273,7 +291,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const handleSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if ((!text.trim() && !attachedFile) || isStreaming || uploadingFile) return;
+    if ((!text.trim() && !attachedFile && !attachedImage) || isStreaming || uploadingFile) return;
 
     setShowSuggestions(false);
     let docId: string | undefined = undefined;
@@ -300,9 +318,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       }
     }
 
-    const messageText = text.trim() || (attachedFile ? `Analyze ${attachedFile.name}` : '');
-    onSend(messageText, docId, docText, docName);
+    const messageText =
+      text.trim() ||
+      (attachedImage
+        ? 'Analyze this picture with Florence-2'
+        : attachedFile
+        ? `Analyze ${attachedFile.name}`
+        : '');
+    onSend(messageText, docId, docText, docName, attachedImage || undefined, visionTask);
     setText('');
+    setAttachedImage(null);
     setManuallyDismissed(false);
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
@@ -402,6 +427,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
         <button
           type="button"
+          onClick={() => setIsCameraOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#1e1e24] hover:bg-[#282834] border border-white/10 text-zinc-300 hover:text-white transition shrink-0"
+        >
+          <Camera className="w-3.5 h-3.5 text-[#bb86fc]" />
+          <span>Florence-2 Vision</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => {
             if (isRecording) {
               stopVoiceRecording();
@@ -420,22 +454,43 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         </button>
       </div>
 
-      {/* Attached File Pill */}
-      {attachedFile && (
-        <div className="mb-2 inline-flex items-center gap-2 bg-[#282834] border border-[#bb86fc]/40 rounded-xl px-3 py-1.5 text-xs text-white shadow-md">
-          <FileText className="w-4 h-4 text-[#bb86fc] shrink-0" />
-          <span className="font-medium truncate max-w-[200px]">{attachedFile.name}</span>
-          <span className="text-[10px] text-zinc-400">({(attachedFile.size / 1024).toFixed(1)} KB)</span>
-          <button
-            type="button"
-            onClick={removeAttachedFile}
-            className="p-0.5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-rose-400 transition"
-            title="Remove attachment"
-          >
-            <X className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      )}
+      {/* Attached Previews (File & Camera Snapshot) */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {attachedFile && (
+          <div className="mb-2 inline-flex items-center gap-2 bg-[#282834] border border-[#bb86fc]/40 rounded-xl px-3 py-1.5 text-xs text-white shadow-md">
+            <FileText className="w-4 h-4 text-[#bb86fc] shrink-0" />
+            <span className="font-medium truncate max-w-[200px]">{attachedFile.name}</span>
+            <span className="text-[10px] text-zinc-400">({(attachedFile.size / 1024).toFixed(1)} KB)</span>
+            <button
+              type="button"
+              onClick={removeAttachedFile}
+              className="p-0.5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-rose-400 transition"
+              title="Remove attachment"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {attachedImage && (
+          <div className="mb-2 inline-flex items-center gap-2 bg-[#282834] border border-[#bb86fc]/40 rounded-xl p-1 pr-3 text-xs text-white shadow-md">
+            <img
+              src={attachedImage}
+              alt="Snapshot"
+              className="w-7 h-7 rounded-lg object-cover border border-white/10"
+            />
+            <span className="font-medium text-[11px] text-[#d0bcff]">📸 Florence-2 Snapshot</span>
+            <button
+              type="button"
+              onClick={() => setAttachedImage(null)}
+              className="p-0.5 hover:bg-white/10 rounded-full text-zinc-400 hover:text-rose-400 transition ml-1"
+              title="Remove snapshot"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* ─── LIVE PROMPT SUGGESTIONS FLYOUT ─── */}
       {showSuggestions && suggestions.length > 0 && !isRecording && (
@@ -600,6 +655,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               type="button"
+              onClick={() => setIsCameraOpen(true)}
+              className="w-9 h-9 rounded-full bg-[#252530] hover:bg-[#323242] border border-white/10 text-zinc-300 hover:text-[#bb86fc] transition flex items-center justify-center cursor-pointer shadow-sm group"
+              title="Florence-2 Camera Vision (Click Picture)"
+            >
+              <Camera className="w-4 h-4 group-hover:scale-110 transition-transform" />
+            </button>
+            <button
+              type="button"
               onClick={isRecording ? stopVoiceRecording : startVoiceRecording}
               className={`w-9 h-9 rounded-full border transition flex items-center justify-center cursor-pointer shadow-sm group ${
                 isRecording
@@ -620,7 +683,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             </button>
             <button
               type="submit"
-              disabled={!text.trim() && !attachedFile}
+              disabled={!text.trim() && !attachedFile && !attachedImage}
               className="w-9 h-9 fab-purple disabled:opacity-40 disabled:hover:bg-[#bb86fc] rounded-full transition flex items-center justify-center cursor-pointer shadow-md shadow-purple-950/40"
               title="Send"
             >
@@ -629,6 +692,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
         )}
       </form>
+
+      <CameraModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        onCapture={handleCameraCapture}
+      />
     </div>
   );
 };

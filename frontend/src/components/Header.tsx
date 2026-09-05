@@ -33,6 +33,7 @@ interface HeaderProps {
 const MODELS = [
   { id: 'qwen-2.5-0.5b-local', name: '⚡ Qwen 2.5 0.5B (100% Free & Keyless)' },
   { id: 'qwen-2.5-1.5b-local', name: '🧠 Qwen 2.5 1.5B (Keyless Deep Reasoning)' },
+  { id: 'florence-2', name: '👁️ Florence-2 (Camera Vision Analysis)' },
   { id: 'faster-whisper', name: '🎙️ Faster-Whisper (Voice-to-Text)' },
   { id: 'sana-1.6b', name: '🎨 SANA 1.6B (Text-to-Image Diffusion)' },
   { id: 'llama-3.3-70b-versatile', name: '☁️ Llama 3.3 70B (Groq Cloud)' },

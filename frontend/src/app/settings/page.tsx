@@ -101,6 +101,9 @@ export default function SettingsPage() {
                 <option value="qwen-2.5-0.5b-local">Qwen 2.5 0.5B — Fast, Keyless, Runs Locally</option>
                 <option value="qwen-2.5-1.5b-local">Qwen 2.5 1.5B — Smarter, Keyless, Runs Locally</option>
               </optgroup>
+              <optgroup label="👁️ Vision & Camera AI (Keyless & Instant)">
+                <option value="florence-2">Florence-2 — Microsoft Camera Vision Analysis & Detailed Captioning</option>
+              </optgroup>
               <optgroup label="🎨 Image Generation (Keyless & Instant)">
                 <option value="sana-1.6b">SANA 1.6B — Ultra-Fast Diffusion Transformer (1024px)</option>
               </optgroup>

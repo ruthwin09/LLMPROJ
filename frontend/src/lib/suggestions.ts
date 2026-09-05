@@ -2,7 +2,7 @@
 
 export interface PromptSuggestion {
   id: string;
-  category: 'image' | 'code' | 'writing' | 'research' | 'productivity';
+  category: 'vision' | 'image' | 'code' | 'writing' | 'research' | 'productivity';
   title: string;
   badge: string;
   icon: string;
@@ -11,6 +11,35 @@ export interface PromptSuggestion {
 }
 
 export const PROMPT_SUGGESTIONS: PromptSuggestion[] = [
+  // ─── Camera Vision Analysis (Florence-2) ───
+  {
+    id: 'vis-1',
+    category: 'vision',
+    badge: 'Florence-2 Vision',
+    icon: '👁️',
+    title: 'Analyze scene details in captured photo',
+    prompt: 'Analyze this picture in detail with Florence-2 (<MORE_DETAILED_CAPTION>)',
+    keywords: ['florence', 'vision', 'camera', 'photo', 'picture', 'snapshot', 'scene', 'analysis', 'look', 'see', 'caption'],
+  },
+  {
+    id: 'vis-2',
+    category: 'vision',
+    badge: 'Florence-2 Vision',
+    icon: '📦',
+    title: 'Detect and identify objects in picture',
+    prompt: 'Detect and identify all objects in this picture with Florence-2 (<OD>)',
+    keywords: ['florence', 'detect', 'objects', 'vision', 'camera', 'photo', 'identify', 'items', 'count', 'bounding box'],
+  },
+  {
+    id: 'vis-3',
+    category: 'vision',
+    badge: 'Florence-2 Vision',
+    icon: '📝',
+    title: 'Read and extract text from picture (OCR)',
+    prompt: 'Read and extract all visible text in this picture with Florence-2 (<OCR>)',
+    keywords: ['florence', 'ocr', 'text', 'read', 'extract', 'words', 'label', 'sign', 'document', 'receipt', 'invoice'],
+  },
+
   // ─── Image Generation (SANA 1.6B) ───
   {
     id: 'img-1',

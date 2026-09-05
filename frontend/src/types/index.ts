@@ -17,6 +17,7 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  image_url?: string;
   citations?: Citation[];
   feedback?: 'upvote' | 'downvote';
   created_at: string;

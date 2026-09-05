@@ -21,6 +21,7 @@ import {
   Brain,
   Palette,
   ExternalLink,
+  Camera,
 } from 'lucide-react';
 import { Message } from '@/types';
 import { CodeBlock } from './CodeBlock';
@@ -310,6 +311,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     : 'bg-[#1e1e24] text-zinc-100 rounded-tl-sm border border-white/10 shadow-md'
                 }`}
               >
+                {msg.image_url && (
+                  <div className="mb-3 space-y-1.5">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#bb86fc]/20 border border-[#bb86fc]/30 text-[11px] text-[#d0bcff] font-medium">
+                      <Camera className="w-3.5 h-3.5 text-[#bb86fc]" />
+                      <span>Florence-2 Camera Snapshot</span>
+                    </div>
+                    <div className="rounded-2xl overflow-hidden border border-white/10 max-w-sm max-h-64 sm:max-h-80 shadow-md">
+                      <img
+                        src={msg.image_url}
+                        alt="Camera Snapshot"
+                        className="w-full h-auto object-cover max-h-64 sm:max-h-80"
+                      />
+                    </div>
+                  </div>
+                )}
+
                 {isEditing ? (
                   <div className="space-y-2">
                     <textarea

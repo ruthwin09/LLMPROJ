@@ -8,6 +8,7 @@ import {
   analyzeUploadedDocument,
   fetchWebSearchSummary,
 } from '@/lib/response_engine';
+import { analyzeWithFlorence2 } from '@/lib/florence_engine';
 
 export const runtime = 'edge';
 
@@ -552,20 +553,39 @@ function handleSanaImageGeneration(prompt: string): string {
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, model, memories = [], document_text, document_name } = await req.json();
+    const {
+      message,
+      model,
+      memories = [],
+      document_text,
+      document_name,
+      image_url,
+      image,
+      vision_task,
+    } = await req.json();
     const cleanPrompt = (message || '').trim();
+    const effectiveImage = image_url || image;
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
         let generatedResponse = "";
 
-        // 0. Check uploaded document content first (PDF, TXT, CSV, JSON, MD RAG)
-        if (document_text && document_text.trim()) {
+        // 0. Check Florence-2 Vision Analysis (Camera photo snapshot or explicit vision model)
+        if (effectiveImage || model === 'florence-2' || cleanPrompt.toLowerCase().startsWith('/vision')) {
+          generatedResponse = analyzeWithFlorence2(
+            cleanPrompt,
+            effectiveImage,
+            vision_task || '<MORE_DETAILED_CAPTION>'
+          );
+        }
+
+        // 0.1 Check uploaded document content first (PDF, TXT, CSV, JSON, MD RAG)
+        if (!generatedResponse && document_text && document_text.trim()) {
           generatedResponse = analyzeUploadedDocument(cleanPrompt, document_text, document_name);
         }
 
-        // 0.1 Check memory directives (remember, recall, forget, clear)
+        // 0.2 Check memory directives (remember, recall, forget, clear)
         if (!generatedResponse) {
           const memoryAnswer = handleMemoryRequest(cleanPrompt, memories);
           if (memoryAnswer) {

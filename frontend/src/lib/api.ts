@@ -32,6 +32,8 @@ export const streamChatResponse = async (
     document_ids?: string[];
     document_text?: string;
     document_name?: string;
+    image_url?: string;
+    vision_task?: string;
     memories?: any[];
     api_key?: string;
   },

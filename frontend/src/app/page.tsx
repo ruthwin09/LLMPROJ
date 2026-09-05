@@ -190,7 +190,9 @@ export default function Home() {
     text: string,
     attachedDocId?: string,
     attachedDocText?: string,
-    attachedDocName?: string
+    attachedDocName?: string,
+    attachedImage?: string,
+    visionTask?: string
   ) => {
     let currentId = activeConvId;
 
@@ -213,6 +215,7 @@ export default function Home() {
       id: `msg_${Date.now()}`,
       role: 'user',
       content: text,
+      image_url: attachedImage,
       created_at: new Date().toISOString(),
     };
 
@@ -254,10 +257,12 @@ export default function Home() {
       {
         conversation_id: currentId,
         message: text,
-        model: activeModel,
+        model: attachedImage ? 'florence-2' : activeModel,
         document_ids: attachedDocId ? [attachedDocId] : undefined,
         document_text: attachedDocText,
         document_name: attachedDocName,
+        image_url: attachedImage,
+        vision_task: visionTask,
         memories: currentMemories,
       },
       (chunk) => {
