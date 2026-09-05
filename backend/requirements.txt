@@ -19,3 +19,4 @@ requests>=2.31.0
 --extra-index-url https://download.pytorch.org/whl/cpu
 torch
 transformers
+faster-whisper>=1.0.0

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import Base, engine
-from app.api import auth, chat, upload, settings as settings_api
+from app.api import auth, chat, upload, settings as settings_api, audio
 
 # Initialize Database Tables
 Base.metadata.create_all(bind=engine)
@@ -28,6 +28,7 @@ app.include_router(auth.router, prefix=settings.API_V1_STR)
 app.include_router(chat.router, prefix=settings.API_V1_STR)
 app.include_router(upload.router, prefix=settings.API_V1_STR)
 app.include_router(settings_api.router, prefix=settings.API_V1_STR)
+app.include_router(audio.router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

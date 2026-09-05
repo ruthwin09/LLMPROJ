@@ -104,6 +104,9 @@ export default function SettingsPage() {
               <optgroup label="🎨 Image Generation (Keyless & Instant)">
                 <option value="sana-1.6b">SANA 1.6B — Ultra-Fast Diffusion Transformer (1024px)</option>
               </optgroup>
+              <optgroup label="🎙️ Audio & Speech-to-Text (Instant Voice)">
+                <option value="faster-whisper">Faster-Whisper — Real-Time Voice-to-Text Model</option>
+              </optgroup>
               <optgroup label="☁️ Cloud Models (API Key Required)">
                 <option value="llama-3.3-70b-versatile">Llama 3.3 70B (Groq — Free API Key)</option>
                 <option value="gpt-4o-mini">OpenAI GPT-4o Mini</option>
