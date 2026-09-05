@@ -35,7 +35,7 @@ export const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 
   const clientId =
     process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
-    '894836364823-p3q8a5mspguceiqjsq0akqtkq48ljjsn.apps.googleusercontent.com';
+    '894836364823-bgr8d88qvp92uk2154v3nq2urahlk2lc.apps.googleusercontent.com';
 
   // ---------------------------------------------------------------------------
   // Exchange Google credential with backend
