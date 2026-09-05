@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { Message } from '@/types';
 import { CodeBlock } from './CodeBlock';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -164,23 +166,94 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   }
 
   const renderMessageContent = (content: string) => {
-    if (content.includes('```')) {
-      const parts = content.split(/(```[\s\S]*?```)/g);
-      return parts.map((part, idx) => {
-        if (part.startsWith('```') && part.endsWith('```')) {
-          const firstLineEnd = part.indexOf('\n');
-          const lang = part.slice(3, firstLineEnd).trim() || 'code';
-          const codeText = part.slice(firstLineEnd + 1, -3);
-          return <CodeBlock key={idx} language={lang} code={codeText} />;
-        }
-        return (
-          <div key={idx} className="whitespace-pre-wrap leading-relaxed text-sm text-zinc-100">
-            {part}
-          </div>
-        );
-      });
-    }
-    return <div className="whitespace-pre-wrap leading-relaxed text-sm text-zinc-100">{content}</div>;
+    return (
+      <div className="prose prose-invert max-w-none text-sm leading-relaxed space-y-3">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h1: ({ children }) => (
+              <h1 className="text-lg font-bold text-white mt-4 mb-2 pb-1 border-b border-white/10 flex items-center gap-2">
+                {children}
+              </h1>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-base font-bold text-white mt-3.5 mb-1.5 flex items-center gap-2">
+                {children}
+              </h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className="text-sm font-semibold text-[#d0bcff] mt-3 mb-1 flex items-center gap-1.5">
+                {children}
+              </h3>
+            ),
+            h4: ({ children }) => (
+              <h4 className="text-xs font-semibold text-zinc-200 mt-2.5 mb-1">
+                {children}
+              </h4>
+            ),
+            p: ({ children }) => (
+              <p className="text-sm text-zinc-200 leading-relaxed mb-2.5 last:mb-0">
+                {children}
+              </p>
+            ),
+            ul: ({ children }) => (
+              <ul className="list-disc list-inside space-y-1 my-2 text-zinc-200 text-sm">
+                {children}
+              </ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="list-decimal list-inside space-y-1 my-2 text-zinc-200 text-sm">
+                {children}
+              </ol>
+            ),
+            li: ({ children }) => (
+              <li className="text-zinc-200 text-sm leading-relaxed">
+                {children}
+              </li>
+            ),
+            hr: () => <hr className="my-3 border-white/10" />,
+            strong: ({ children }) => (
+              <strong className="font-semibold text-white">
+                {children}
+              </strong>
+            ),
+            em: ({ children }) => (
+              <em className="text-zinc-400 italic">
+                {children}
+              </em>
+            ),
+            code: ({ inline, className, children, ...props }: any) => {
+              const match = /language-(\w+)/.exec(className || '');
+              const codeString = String(children).replace(/\n$/, '');
+
+              if (!inline && (match || codeString.includes('\n'))) {
+                return (
+                  <CodeBlock
+                    language={match ? match[1] : 'code'}
+                    code={codeString}
+                  />
+                );
+              }
+              return (
+                <code
+                  className="bg-[#2a2a35] text-[#bb86fc] px-1.5 py-0.5 rounded text-xs font-mono border border-white/5"
+                  {...props}
+                >
+                  {children}
+                </code>
+              );
+            },
+            blockquote: ({ children }) => (
+              <blockquote className="border-l-2 border-[#bb86fc] pl-3 py-1 my-2 text-zinc-400 text-xs italic bg-white/5 rounded-r">
+                {children}
+              </blockquote>
+            ),
+          }}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    );
   };
 
   return (

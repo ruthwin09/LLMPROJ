@@ -157,7 +157,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         </div>
                         <p className="text-[10px] text-zinc-500 truncate mt-0.5">
                           {conv.messages && conv.messages.length > 0
-                            ? conv.messages[conv.messages.length - 1].content.slice(0, 30) + '...'
+                            ? conv.messages[conv.messages.length - 1].content
+                                .replace(/[#*`_~]/g, '')
+                                .replace(/\s+/g, ' ')
+                                .trim()
+                                .slice(0, 32) + '...'
                             : 'AI consultation thread'}
                         </p>
                       </>
