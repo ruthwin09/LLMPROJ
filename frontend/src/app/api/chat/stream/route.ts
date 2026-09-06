@@ -307,47 +307,78 @@ if __name__ == "__main__":
   return null;
 }
 
+const COMMON_ALIASES: Record<string, string> = {
+  ai: 'Artificial intelligence',
+  ml: 'Machine learning',
+  dl: 'Deep learning',
+  llm: 'Large language model',
+  llms: 'Large language model',
+  nlp: 'Natural language processing',
+  dsa: 'Data structure',
+  os: 'Operating system',
+  dbms: 'Database',
+  rdbms: 'Relational database',
+  sql: 'SQL',
+  iot: 'Internet of things',
+  api: 'API',
+  rest: 'Representational state transfer',
+  graphql: 'GraphQL',
+  jwt: 'JSON Web Token',
+  oauth: 'OAuth',
+  aws: 'Amazon Web Services',
+  gcp: 'Google Cloud Platform',
+  docker: 'Docker (software)',
+  k8s: 'Kubernetes',
+  git: 'Git',
+  oop: 'Object-oriented programming',
+  cpu: 'Central processing unit',
+  gpu: 'Graphics processing unit',
+  ram: 'Random-access memory',
+};
+
 // Query Wikipedia for factual knowledge & deep summaries
 async function fetchWikipediaSummary(query: string): Promise<string | null> {
   const cleanKeyword = query
-    .replace(/^(?:please\s+)?(?:summarize\s+and\s+analyze\s+the\s+key\s+findings\s+in|summarize\s+and\s+analyze|summarize|analyze|can\s+you\s+please|please|could\s+you|can\s+you|tell\s+me\s+about|what\s+is\s+a|what\s+is|what\s+are|who\s+is|who\s+was|explain|describe|give\s+me\s+details\s+on|give\s+me\s+information\s+on|how\s+does|how\s+do)\s+/i, '')
+    .replace(/^(?:please\s+)?(?:tell\s+(?:me\s+)?about|what\s+is\s+an?|what\s+is|what\s+are|what\s+was|who\s+is|who\s+was|explain|describe|give\s+(?:me\s+)?details\s+on|details\s+about|info\s+on|about|summarize\s+and\s+analyze\s+the\s+key\s+findings\s+in|summarize\s+and\s+analyze|summarize|analyze|can\s+you\s+please|could\s+you|can\s+you|how\s+does|how\s+do)\s+/i, '')
     .replace(/\.(?:pdf|docx|txt|csv|json|md)\b/gi, '')
     .replace(/[?!.,]+$/g, '')
     .trim();
 
   if (!cleanKeyword || cleanKeyword.length < 2) return null;
 
+  const aliasMatch = COMMON_ALIASES[cleanKeyword.toLowerCase()];
+  const searchTerm = aliasMatch || cleanKeyword;
+
   try {
     // 1. Search Wikipedia for best article match
-    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(cleanKeyword)}&utf8=&format=json&srlimit=1`;
+    const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(searchTerm)}&utf8=&format=json&srlimit=3`;
     const sRes = await fetch(searchUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
     });
 
     if (sRes.ok) {
       const sData = await sRes.json();
-      const topTitle = sData.query?.search?.[0]?.title;
-      if (topTitle) {
-        // Verify title relevance to avoid spurious full-text matches (e.g. Amrutham for TOLET BOARD SHOP)
-        const queryTokens = cleanKeyword.toLowerCase().split(/\W+/).filter((t) => t.length > 2);
-        const lowerTitle = topTitle.toLowerCase();
-        const hasOverlap = queryTokens.some((qt) => lowerTitle.includes(qt));
-        if (!hasOverlap) {
-          return null; // Fall through to DuckDuckGo live web search
-        }
+      const results = sData.query?.search || [];
+      if (results.length > 0) {
+        const topResult = aliasMatch
+          ? results.find((r: any) => r.title.toLowerCase().includes(aliasMatch.toLowerCase())) || results[0]
+          : results[0];
 
-        // 2. Extract intro text
-        const extUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(topTitle)}&format=json`;
-        const extRes = await fetch(extUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-        });
+        const matchedTitle = topResult?.title;
+        if (matchedTitle) {
+          // 2. Extract intro text
+          const extUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=${encodeURIComponent(matchedTitle)}&format=json`;
+          const extRes = await fetch(extUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
+          });
 
-        if (extRes.ok) {
-          const extData = await extRes.json();
-          const pages = extData.query?.pages;
-          const page = pages && pages[Object.keys(pages)[0]];
-          if (page && page.extract && page.extract.length > 40) {
-            return formatKnowledgeResponse(page.title, page.extract);
+          if (extRes.ok) {
+            const extData = await extRes.json();
+            const pages = extData.query?.pages;
+            const page = pages && pages[Object.keys(pages)[0]];
+            if (page && page.extract && page.extract.length > 40) {
+              return formatKnowledgeResponse(page.title, page.extract);
+            }
           }
         }
       }

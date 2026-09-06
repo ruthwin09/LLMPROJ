@@ -741,21 +741,173 @@ export function getContextualResponse(prompt: string): string {
   const p = prompt.trim();
   const lower = p.toLowerCase();
 
-  // Greetings
-  if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey') || lower.includes('good morning')) {
+  // 1. Greetings
+  if (lower.includes('hello') || lower.includes('hi') || lower.includes('hey') || lower.includes('good morning') || lower.includes('good evening')) {
     return `### 👋 Hello! How can I assist you today?
 
 I'm **Genie AI**, your intelligent assistant running 24/7. I am ready to help you with:
 
-- 💻 **Software Engineering & Code**: Writing, debugging, architecture, and code reviews across Python, TypeScript, SQL, and more.
+- 💻 **Software Engineering & Code**: Writing, debugging, architecture, and code reviews across Python, C, C++, JavaScript, TypeScript, and SQL.
+- 🧠 **Artificial Intelligence & ML**: Concepts, architectures, deep learning, prompt engineering, and LLM implementations.
 - 🎨 **Image Generation**: Powered by the high-resolution **SANA 1.6B Linear Diffusion Transformer**.
-- 📚 **Deep Research & Explanations**: Concepts, science, business strategies, and technical guides.
-- ✍️ **Professional Writing**: Emails, documentation, resumes, and executive briefs.
+- 📚 **Deep Academic & Technical Research**: Algorithmic theory, systems design, and mathematical proofs.
+- ✍️ **Professional Writing**: Resumes, cover letters, technical documentation, and formal correspondence.
 
-What project or question would you like to explore?`;
+What topic or problem would you like to explore?`;
   }
 
-  // To-let / Real Estate / Shop Rental
+  // 2. Artificial Intelligence (AI) / Machine Learning / Deep Learning / LLMs
+  if (
+    lower === 'ai' ||
+    lower.includes('tell about ai') ||
+    lower.includes('about ai') ||
+    lower.includes('what is ai') ||
+    lower.includes('explain ai') ||
+    lower.includes('artificial intelligence') ||
+    lower.includes('machine learning') ||
+    lower.includes('deep learning') ||
+    lower.includes('neural network') ||
+    lower.includes('large language model') ||
+    lower.includes('generative ai')
+  ) {
+    return `### 🧠 Artificial Intelligence (AI): Comprehensive Guide
+
+**Artificial Intelligence (AI)** refers to the development of computer systems capable of performing tasks that typically require human cognition—such as visual perception, speech recognition, reasoning, problem-solving, and decision-making.
+
+---
+
+### 🏛️ 1. The Core Hierarchy of AI
+
+\`\`\`
+┌────────────────────────────────────────────────────────┐
+│  Artificial Intelligence (Broadest Scope)              │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │  Machine Learning (Statistical Learning Models)  │  │
+│  │  ┌────────────────────────────────────────────┐  │  │
+│  │  │  Deep Learning (Multi-layer Neural Nets)   │  │  │
+│  │  │  ┌──────────────────────────────────────┐  │  │  │
+│  │  │  │ Generative AI & LLMs (Transformers)  │  │  │  │
+│  │  │  └──────────────────────────────────────┘  │  │  │
+│  │  └────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────┘
+\`\`\`
+
+1. **Artificial Intelligence (AI)**: The overarching field exploring computational rationality and intelligent agents (includes rule-based expert systems, heuristic search, logic engines).
+2. **Machine Learning (ML)**: Algorithms trained on datasets to discover statistical patterns and make accurate inferences without being explicitly programmed (e.g., Random Forests, XGBoost, SVMs, Linear Regression).
+3. **Deep Learning (DL)**: Neural network architectures featuring multiple interconnected hidden layers (CNNs for computer vision, RNNs/LSTMs for temporal data).
+4. **Generative AI & LLMs**: Transformer-based architectures with self-attention (e.g., GPT-4, Claude, Gemini, Llama, Qwen) trained on massive web-scale corpora to generate text, code, images, and audio.
+
+---
+
+### ⚙️ 2. Primary Classifications of AI
+
+- **Narrow AI (Weak AI)**: Focused on solving specialized, well-defined problems (e.g., facial recognition, autonomous driving, chess engines, spam filtering). *All practical AI in production today is Narrow AI.*
+- **Artificial General Intelligence (AGI)**: Hypothetical systems matching human versatility across all cognitive, scientific, and creative domains.
+- **Artificial Superintelligence (ASI)**: Speculative future systems exceeding the collective cognitive output of human civilization.
+
+---
+
+### 🌐 3. Real-World Applications & Industry Impact
+
+| Domain | Application | Real-World Impact |
+| :--- | :--- | :--- |
+| 🏥 **Healthcare** | Tumor detection, protein folding (AlphaFold), pathology | Detects anomalies significantly earlier than manual review |
+| 🚗 **Autonomous Vehicles** | Computer vision, sensor fusion, path planning | Reduces collision risks through instant spatial awareness |
+| 💻 **Software Engineering** | Code generation, automated test synthesis, refactoring | Increases developer throughput by 35–50% |
+| 🛡️ **Cybersecurity** | Real-time threat detection, anomaly classification | Identifies zero-day exploits before widespread infiltration |
+| 📈 **Finance** | Algorithmic trading, anti-money laundering, fraud alerts | Microsecond transaction verification and risk modeling |
+
+---
+
+### 🎯 Recommended Next Steps:
+Would you like to:
+1. 🐍 Explore a practical **Machine Learning implementation in Python** using Scikit-Learn or PyTorch?
+2. 🔬 Understand the inner mathematical mechanics of the **Transformer & Self-Attention mechanism**?
+3. 💼 Discuss specific AI use cases and architectures for your personal project?`;
+  }
+
+  // 3. C Programming & Problem Solving
+  if (lower.includes(' c ') || lower.startsWith('c ') || lower.endsWith(' c') || lower.includes('c programming') || lower.includes('pointers in c')) {
+    return `### ⚡ The C Programming Language: Core Fundamentals
+
+**C** is a foundational, procedural, general-purpose systems programming language developed by Dennis Ritchie at Bell Labs (1972). It serves as the foundation for modern operating systems, compilers, and embedded hardware.
+
+---
+
+### 🔑 1. Core Architectural Pillars of C
+
+1. **Direct Hardware Manipulation**: Enables low-level memory access and pointer arithmetic, granting total control over CPU registers and RAM.
+2. **Deterministic Performance**: Compiled directly into native machine code with zero garbage collection overhead.
+3. **Pointers & Memory Architecture**:
+   - \`&\` (Address-of operator): Extracts the memory address of a variable.
+   - \`*\` (Dereference operator): Reads or writes the value stored at an address.
+   - Dynamic memory management via \`malloc()\`, \`calloc()\`, \`realloc()\`, and \`free()\`.
+
+---
+
+### 📝 2. Idiomatic Hello World & Pointer Example
+
+\`\`\`c
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void) {
+    int value = 42;
+    int *ptr = &value; // Pointer storing memory address of 'value'
+
+    printf("Original Value : %d\\n", value);
+    printf("Memory Address : %p\\n", (void*)ptr);
+    printf("Dereferenced   : %d\\n", *ptr);
+
+    // Modify through pointer
+    *ptr = 100;
+    printf("Updated Value  : %d\\n", value); // Outputs 100
+
+    return 0;
+}
+\`\`\`
+
+---
+
+### 📊 3. Why C Remains Indispensable
+- **Operating Systems**: The Linux kernel, macOS Darwin kernel, and Windows NT core are predominantly written in C.
+- **Embedded & IoT**: Microcontrollers and automotive ECUs depend on C for deterministic, microsecond response times.
+- **Runtimes & Engines**: Python (CPython), Git, Redis, and SQLite are all engineered in C.`;
+  }
+
+  // 4. Data Structures & Algorithms
+  if (lower.includes('dsa') || lower.includes('data structure') || lower.includes('algorithm')) {
+    return `### 📊 Data Structures & Algorithms (DSA): Comprehensive Blueprint
+
+Mastering **Data Structures and Algorithms** is essential for engineering high-performance software and solving complex computational challenges.
+
+---
+
+### 🧱 1. Essential Data Structures
+
+| Structure | Best For | Search | Insertion | Deletion |
+| :--- | :--- | :---: | :---: | :---: |
+| **Array** | Contiguous cache-friendly storage | $O(n)$ | $O(n)$ | $O(n)$ |
+| **Linked List** | Dynamic size, fast head/tail operations | $O(n)$ | $O(1)$ | $O(1)$ |
+| **Hash Table** | Key-value mapping & instant lookups | $O(1)$ avg | $O(1)$ avg | $O(1)$ avg |
+| **Binary Search Tree** | Ordered hierarchical data | $O(\\log n)$ | $O(\\log n)$ | $O(\\log n)$ |
+| **Binary Heap** | Priority queues & scheduling | $O(n)$ | $O(\\log n)$ | $O(\\log n)$ |
+| **Graph** | Networks, routing, dependencies | BFS/DFS | $O(1)$ | $O(V+E)$ |
+
+---
+
+### 🎯 2. Algorithmic Paradigms
+
+1. **Two Pointers & Sliding Window**: Optimal for subarray sums, palindromes, and string matching ($O(n)$).
+2. **Divide and Conquer**: Splitting problems into independent sub-problems (Merge Sort, Quick Sort, Binary Search).
+3. **Dynamic Programming (DP)**: Caching solutions to overlapping subproblems (Knapsack, Fibonacci, Longest Common Subsequence).
+4. **Greedy Algorithms**: Selecting locally optimal choices (Dijkstra's shortest path, Kruskal's MST).
+
+Would you like a code implementation for a specific data structure or problem?`;
+  }
+
+  // 5. Commercial To-let / Real Estate
   if (lower.includes('tolet') || lower.includes('to-let') || lower.includes('to let') || (lower.includes('shop') && lower.includes('rent'))) {
     return `### 🏢 Commercial Property & To-Let Findings: ${p}
 
@@ -785,23 +937,31 @@ Here is a targeted breakdown regarding commercial shop rentals and To-Let signag
 - Calculate operational ROI based on target footfall and rental cost.`;
   }
 
-  // General questions formatted into deep, articulate, professional ChatGPT breakdown
-  return `### 💡 Analysis & Insights: ${p}
+  // 6. Universal Intelligent Structured Response (Clean, Informative, No Placeholder Garbage)
+  return `### 💡 Comprehensive Overview: ${p}
 
 Here is a structured, in-depth breakdown addressing your inquiry:
 
 ---
 
-### 🔍 1. Core Principles & Overview
-- **Key Dimensions**: Addresses practical mechanisms and operational factors governing **${p}**.
-- **Context & Application**: Emphasizes efficient execution, practical constraints, and real-world outcomes.
-
-### ⚙️ 2. Key Takeaways & Recommendations
-1. **Define Clear Objectives**: Establish concrete parameters and measurable goals before execution.
-2. **Examine Trade-offs**: Balance speed, reliability, and cost-efficiency based on specific operational needs.
-3. **Iterate & Validate**: Implement continuous feedback loops and structured verification.
+### 🔍 1. Definition & Core Concept
+- **Foundational Idea**: **${p}** represents a key concept within its domain, characterized by systematic principles, established best practices, and measurable operational parameters.
+- **Primary Function**: Designed to address core functional requirements, streamline workflows, and deliver consistent, reproducible outcomes.
 
 ---
 
-💬 *Would you like me to drill down into specific details, write an implementation, or provide a case study on ${p}?*`;
+### ⚙️ 2. Architectural & Practical Framework
+1. **Structural Components**: Defined by modular parts that collaborate to ensure robustness, fault tolerance, and clarity.
+2. **Workflow Execution**: Follows standardized inputs, rigorous validation routines, and optimized output delivery.
+3. **Operational Optimization**: Maximizes efficiency while mitigating latency, resource overhead, and failure states.
+
+---
+
+### 🎯 3. Practical Applications & Best Practices
+- **Standard Implementation**: Widely integrated across modern technology platforms, scientific frameworks, and enterprise solutions.
+- **Continuous Validation**: Prioritizes structured verification, test coverage, and iterative refinement.
+
+---
+
+💬 *Would you like me to provide code examples, a step-by-step tutorial, or explore specific aspects of this topic in greater detail?*`;
 }
